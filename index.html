@@ -42,9 +42,7 @@
             timerBox.innerText = `${min}:${sec}:${ms}`;
         }
 
-        // --- KONFIGURASI TAHAPAN (STAGES) ---
-        // Rekomendasi: Coba total 20 detik dulu (10s + 10s)
-        const stages = [4900]; 
+        const stages = [1000, 1000, 1000, 900]; 
 
         function executeStage(index) {
             if (index >= stages.length) {
@@ -55,13 +53,12 @@
                         log("<span style='color:cyan; font-size: 1.2em;'>SUCCESS: GESTURE LAUNDERED!</span>");
                         clearInterval(timerInterval);
                         
-                        // Otomatis keluar fullscreen setelah 3 detik biar kelihatan dinamis
                         setTimeout(() => {
                             if (document.fullscreenElement) {
                                 document.exitFullscreen();
                                 log("Test completed. Exit Fullscreen.");
                             }
-                        }, 3000);
+                        });
                     })
                     .catch(e => {
                         log("<span style='color:red'>EXPIRED: " + e.message + "</span>");
