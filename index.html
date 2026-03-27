@@ -3,82 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VRP Research Lab - Activation Leak</title>
+    <title>10s Activation Leak Lab</title>
     <style>
-        body { background: #121212; color: #0f0; font-family: monospace; padding: 20px; text-align: center; }
-        .test-btn { 
-            display: block; width: 80%; margin: 10px auto; padding: 15px; 
-            background: #333; color: #fff; border: 1px solid #555; cursor: pointer;
-        }
-        .status { margin-top: 20px; color: yellow; border: 1px solid #444; padding: 10px; min-height: 50px; }
+        body { background: #000; color: #0f0; font-family: 'Courier New', monospace; padding: 20px; text-align: center; }
+        .log-box { background: #111; border: 1px solid #333; padding: 15px; text-align: left; margin-top: 20px; font-size: 13px; min-height: 150px; border-radius: 8px; }
+        button { padding: 15px; background: #222; color: #0f0; border: 1px solid #0f0; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 10px; transition: 0.3s; }
+        button:active { background: #0f0; color: #000; }
+        .success { color: #0f0; font-weight: bold; text-shadow: 0 0 5px #0f0; }
+        .fail { color: #f00; font-weight: bold; }
+        .timer-display { font-size: 24px; margin: 20px 0; color: yellow; }
     </style>
 </head>
 <body>
 
-    <h2>🔬 Activation Leak Test Lab</h2>
-    <p>Target: Chromium Activation Model</p>
+    <h3>🚀 ULTRA PERSISTENCE LAB</h3>
+    <p>Target: <i>Chrome User Activation Window</i></p>
 
-    <button class="test-btn" onclick="test1()">🔥 TEST 1: 2s Async Delay</button>
-    <button class="test-btn" onclick="test2()">🔥 TEST 2: Multiple Burst Calls</button>
-    <button class="test-btn" onclick="test3()">🔥 TEST 3: Promise Chain (Microtask)</button>
-    <button class="test-btn" onclick="test4()">🔥 TEST 4: Single Alert Persistence</button>
+    <div class="timer-display" id="countdown">0.00s</div>
 
-    <div class="status" id="statusBox">Status: Waiting for interaction...</div>
+    <button onclick="runTest(2000)">TEST: 2 Seconds</button>
+    <button onclick="runTest(5000)">TEST: 5 Seconds</button>
+    <button onclick="runTest(10000)" style="border-color: #f00; color: #f00;">TEST: 10 Seconds (ULTRA)</button>
+    
+    <div class="log-box" id="console">
+        <div>[SYSTEM] Menunggu perintah...</div>
+    </div>
 
     <script>
-        const el = document.documentElement;
-        const log = (msg) => document.getElementById('statusBox').innerText = "Status: " + msg;
+        const logger = document.getElementById('console');
+        const countdown = document.getElementById('countdown');
+        const docEl = document.documentElement;
 
-        // TEST 1: Apakah 'User Activation' bocor setelah delay lama?
-        function test1() {
-            alert("Test 1: Menunggu 2 detik setelah OK...");
-            setTimeout(() => {
-                el.requestFullscreen()
-                    .then(() => log("SUCCESS: Activation LEAKED after 2s delay! (VALID BUG)"))
-                    .catch(e => log("FAILED: Activation expired (Intended)"));
-            }, 2000);
+        function log(msg, type = '') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = `> ${msg}`;
+            logger.appendChild(div);
+            logger.scrollTop = logger.scrollHeight;
         }
 
-        // TEST 2: Apakah bisa memanggil API sensitif berkali-kali (Burst)?
-        function test2() {
-            alert("Test 2: Mencoba Multiple Burst...");
-            setTimeout(() => {
-                let successCount = 0;
-                const tryFS = () => el.requestFullscreen().then(() => successCount++);
-                
-                tryFS(); tryFS(); tryFS();
-                
-                setTimeout(() => {
-                    log(`Burst Result: ${successCount} calls successful.`);
-                    if(successCount > 1) alert("Bypass Detected: Multiple FS calls allowed!");
-                }, 500);
-            }, 50);
-        }
-
-        // TEST 3: Apakah Microtask (Promise) bisa mengecoh guard?
-        function test3() {
-            alert("Test 3: Promise Microtask Test...");
-            Promise.resolve().then(() => {
-                el.requestFullscreen()
-                    .then(() => log("SUCCESS: Promise Chain Bypass! (VALID BUG)"))
-                    .catch(e => log("FAILED: Promise guard active (Intended)"));
-            });
-        }
-
-        // TEST 4: Single Alert Persistence (The Loop)
-        function test4() {
-            alert("Test 4: Klik OK sekali, lalu tekan BACK sistem berkali-kali.");
-            window.history.pushState({p:1}, "", "");
+        function runTest(ms) {
+            log(`Memicu Alert...`);
+            alert(`Setelah klik OK, JANGAN SENTUH layar selama ${ms/1000} detik!\n\nTarget: ${ms/1000}s Delay.`);
             
-            window.onpopstate = function() {
-                // Mencoba FS tanpa alert baru di sini
-                el.requestFullscreen()
-                    .then(() => log("SUCCESS: Loop Re-lock without new Alert! (CRITICAL)"))
-                    .catch(e => {
-                        log("FAILED: Needs new Alert to re-activate.");
-                        // Jika gagal, ini membuktikan hipotesis ke-7 kamu benar.
+            const startTime = Date.now();
+            log(`[OK] Diklik. Timer ${ms}ms dimulai.`, 'success');
+
+            // Visual Timer
+            const timerInterval = setInterval(() => {
+                const elapsed = (Date.now() - startTime) / 1000;
+                countdown.innerText = elapsed.toFixed(2) + "s";
+                if (elapsed >= ms/1000) clearInterval(timerInterval);
+            }, 50);
+
+            setTimeout(() => {
+                const callTime = Date.now();
+                const actualDiff = callTime - startTime;
+                log(`Mencoba requestFullscreen() pada ${actualDiff}ms...`);
+
+                docEl.requestFullscreen()
+                    .then(() => {
+                        log(`🔥 SUCCESS! Fullscreen aktif setelah ${actualDiff}ms!`, 'success');
+                        log(`⚠️ INI ADALAH VALID BUG (Activation Leak).`, 'success');
+                        alert(`BOOM! Berhasil setelah ${actualDiff/1000} detik!`);
+                    })
+                    .catch((err) => {
+                        log(`❌ FAILED: Diblokir browser setelah ${actualDiff}ms.`, 'fail');
+                        log(`Kesimpulan: Activation sudah expired.`);
                     });
-            };
+
+            }, ms);
         }
     </script>
 </body>
