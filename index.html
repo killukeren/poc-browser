@@ -3,73 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>10s Activation Leak Lab</title>
+    <title>VRP Lab: 2.5s Activation Leak</title>
     <style>
-        body { background: #000; color: #0f0; font-family: 'Courier New', monospace; padding: 20px; text-align: center; }
-        .log-box { background: #111; border: 1px solid #333; padding: 15px; text-align: left; margin-top: 20px; font-size: 13px; min-height: 150px; border-radius: 8px; }
-        button { padding: 15px; background: #222; color: #0f0; border: 1px solid #0f0; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 10px; transition: 0.3s; }
-        button:active { background: #0f0; color: #000; }
-        .success { color: #0f0; font-weight: bold; text-shadow: 0 0 5px #0f0; }
-        .fail { color: #f00; font-weight: bold; }
-        .timer-display { font-size: 24px; margin: 20px 0; color: yellow; }
+        body { background: #0a0a0a; color: #00ff00; font-family: 'Courier New', monospace; padding: 20px; text-align: center; }
+        .console { background: #000; border: 1px solid #00ff00; padding: 15px; text-align: left; margin-top: 20px; height: 200px; overflow-y: auto; font-size: 12px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,255,0,0.2); }
+        button { padding: 18px; background: #222; color: #00ff00; border: 2px solid #00ff00; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 1.1rem; transition: 0.2s; }
+        button:active { background: #00ff00; color: #000; }
+        .timer { font-size: 40px; margin: 20px 0; color: #ffff00; text-shadow: 0 0 10px rgba(255,255,0,0.5); }
+        .success { color: #00ff00; font-weight: bold; }
+        .fail { color: #ff0000; font-weight: bold; }
+        .highlight { color: #00ffff; }
     </style>
 </head>
 <body>
 
-    <h3>🚀 ULTRA PERSISTENCE LAB</h3>
-    <p>Target: <i>Chrome User Activation Window</i></p>
+    <h2>🔬 VRP RESEARCH: TEST 2.5s</h2>
+    <div class="timer" id="display">0.000s</div>
 
-    <div class="timer-display" id="countdown">0.00s</div>
-
-    <button onclick="runTest(2000)">TEST: 2 Seconds</button>
-    <button onclick="runTest(5000)">TEST: 5 Seconds</button>
-    <button onclick="runTest(10000)" style="border-color: #f00; color: #f00;">TEST: 10 Seconds (ULTRA)</button>
+    <button onclick="startResearch(2500)">START 2.5s LEAK TEST</button>
     
-    <div class="log-box" id="console">
-        <div>[SYSTEM] Menunggu perintah...</div>
+    <div class="console" id="log">
+        <div>[SYSTEM] Menunggu User Activation...</div>
     </div>
 
     <script>
-        const logger = document.getElementById('console');
-        const countdown = document.getElementById('countdown');
-        const docEl = document.documentElement;
+        const logger = document.getElementById('log');
+        const display = document.getElementById('display');
+        const el = document.documentElement;
 
-        function log(msg, type = '') {
+        function print(msg, type = '') {
             const div = document.createElement('div');
             div.className = type;
-            div.innerHTML = `> ${msg}`;
+            div.innerHTML = `[${new Date().toLocaleTimeString('id-ID', {hour12:false})}.${new Date().getMilliseconds()}] > ${msg}`;
             logger.appendChild(div);
             logger.scrollTop = logger.scrollHeight;
         }
 
-        function runTest(ms) {
-            log(`Memicu Alert...`);
-            alert(`Setelah klik OK, JANGAN SENTUH layar selama ${ms/1000} detik!\n\nTarget: ${ms/1000}s Delay.`);
+        function startResearch(ms) {
+            print("Memicu Modal Alert...");
             
-            const startTime = Date.now();
-            log(`[OK] Diklik. Timer ${ms}ms dimulai.`, 'success');
+            // Step 1: User Gesture (Klik OK)
+            alert(`UJI NYALI 2.5 DETIK:\n\n1. Klik OK\n2. JANGAN SENTUH HP/LAYAR\n3. Tunggu sampai timer 2.500s`);
+            
+            const T0 = performance.now();
+            print("Alert ditutup. Token Activation dimulai.", "success");
 
-            // Visual Timer
-            const timerInterval = setInterval(() => {
-                const elapsed = (Date.now() - startTime) / 1000;
-                countdown.innerText = elapsed.toFixed(2) + "s";
-                if (elapsed >= ms/1000) clearInterval(timerInterval);
-            }, 50);
+            // Visual Countdown High Precision
+            const interval = setInterval(() => {
+                const elapsed = performance.now() - T0;
+                display.innerText = (elapsed / 1000).toFixed(3) + "s";
+                if (elapsed >= ms) clearInterval(interval);
+            }, 10);
 
+            // Step 2: Async Call (Mencoba Bypass)
             setTimeout(() => {
-                const callTime = Date.now();
-                const actualDiff = callTime - startTime;
-                log(`Mencoba requestFullscreen() pada ${actualDiff}ms...`);
+                const T1 = performance.now();
+                const diff = (T1 - T0).toFixed(2);
+                
+                print(`Mengeksekusi requestFullscreen() pada ${diff}ms...`, "highlight");
 
-                docEl.requestFullscreen()
+                el.requestFullscreen()
                     .then(() => {
-                        log(`🔥 SUCCESS! Fullscreen aktif setelah ${actualDiff}ms!`, 'success');
-                        log(`⚠️ INI ADALAH VALID BUG (Activation Leak).`, 'success');
-                        alert(`BOOM! Berhasil setelah ${actualDiff/1000} detik!`);
+                        const final = (performance.now() - T0).toFixed(2);
+                        print(`🔥 SUCCESS! Fullscreen tembus pada ${final}ms!`, "success");
+                        print("⚠️ KESIMPULAN: USER ACTIVATION LEAK DETECTED.", "success");
+                        alert(`BOOM! Tembus di ${final}ms.\nIni adalah valid finding (Activation Leak).`);
                     })
                     .catch((err) => {
-                        log(`❌ FAILED: Diblokir browser setelah ${actualDiff}ms.`, 'fail');
-                        log(`Kesimpulan: Activation sudah expired.`);
+                        const final = (performance.now() - T0).toFixed(2);
+                        print(`❌ FAILED: Blocked at ${final}ms.`, "fail");
+                        print("Kesimpulan: Activation Scope sudah benar (Expired).", "fail");
                     });
 
             }, ms);
