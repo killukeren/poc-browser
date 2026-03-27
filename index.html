@@ -39,39 +39,38 @@
             document.body.style.background = "#000"; 
             
             print("Memicu Alert...");
-            alert("Klik OK. Fullscreen dipanggil via NESTED timeout (3.5s).");
+            alert("Click OK. Fullscreen is invoked via NESTED timeout (3.5s).");
             
             const T0 = performance.now();
             
-            // Timer visual agar kita tahu detik keberapa
             const intv = setInterval(() => {
                 timer.innerText = ((performance.now() - T0)/1000).toFixed(3) + "s";
             }, 50);
     
-            print("Step 1: Menunggu 2000ms pertama...");
+            print("Step 1: Waiting for the first 2000ms...");
             
-            // DELAY PERTAMA (2 Detik)
+            // DELAY1  (2d)
             setTimeout(() => {
-                print("Step 1 SELESAI. Menjadwalkan Fullscreen SEKARANG (Nested)...");
+                print("Step 1 DONE. Scheduling NOW Full Screen (Nested)...");
     
-                // DELAY KEDUA (1.5 Detik) - Task ini benar-benar baru dibuat di sini!
+                // DELAY2 (1.5d) 
                 setTimeout(async () => {
                     const T_CALL = performance.now();
                     const diff = (T_CALL - T0).toFixed(2);
                     print(`<b>REAL CALL at ${diff}ms</b>`, 'info');
     
                     try {
-                        // Eksekusi Fullscreen
+                        // Execute Fullscreen
                         await document.documentElement.requestFullscreen();
                         
-                        // JIKA BERHASIL: Ganti warna & stop timer
+                        // True Fullscreen
                         document.body.style.background = "red"; 
                         print(`🔥 SUCCESS! FULLSCREEN ACTIVE at ${diff}ms`, 'success');
-                        print("CEK: Apakah layar tetap Merah & Fullscreen? (Tanpa mental keluar)");
+                        print("CHECK: Is the screen still Red & Fullscreen? (Without mental exit)");
                         
                         clearInterval(intv);
                     } catch (err) {
-                        // JIKA GAGAL (Sesuai spec keamanan browser)
+                        // False Fullscreen
                         print(`❌ BLOCKED at ${diff}ms`, 'fail');
                         print(`Reason: ${err.message}`, 'fail');
                         clearInterval(intv);
