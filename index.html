@@ -3,67 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Precision VRP Validator</title>
+    <title>VRP Research: Activation Sweep Test</title>
     <style>
-        body { background: #000; color: #0f0; font-family: monospace; padding: 20px; }
-        .log { background: #111; border: 1px solid #333; padding: 10px; height: 300px; overflow-y: auto; font-size: 12px; margin-top: 10px; }
-        button { width: 100%; padding: 15px; background: #222; color: #0f0; border: 1px solid #0f0; cursor: pointer; margin-bottom: 5px; }
-        .success { color: #0f0; font-weight: bold; }
-        .fail { color: #f00; }
-        .info { color: #55f; }
+        body { background: #050505; color: #00ff41; font-family: 'Courier New', monospace; padding: 20px; line-height: 1.4; }
+        .container { max-width: 500px; margin: 0 auto; text-align: center; }
+        .console { background: #000; border: 1px solid #00ff41; padding: 15px; text-align: left; height: 350px; overflow-y: auto; font-size: 11px; margin-top: 20px; border-radius: 5px; box-shadow: 0 0 15px rgba(0,255,65,0.2); }
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        button { padding: 12px; background: #111; color: #00ff41; border: 1px solid #00ff41; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        button:active { background: #00ff41; color: #000; }
+        .success { color: #00ff41; font-weight: bold; text-transform: uppercase; }
+        .fail { color: #ff3e3e; }
+        .info { color: #00bfff; }
+        .timer-big { font-size: 32px; color: #ffff00; margin: 15px 0; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h3>🔬 Activation Validator</h3>
-    
-    <button onclick="runStrictTest(2100)">TEST 2.1s</button>
-    <button onclick="runStrictTest(2500)">TEST 2.5s</button>
-    <button onclick="runStrictTest(3000)">TEST 3.0s</button>
+<div class="container">
+    <h2>[VRP] SWEEP TESTER</h2>
+    <div class="timer-big" id="timerDisplay">0.000s</div>
 
-    <div class="log" id="logBox"></div>
+    <div class="controls">
+        <button onclick="runSweep(2200)">TEST 2.2s</button>
+        <button onclick="runSweep(2500)">TEST 2.5s</button>
+        <button onclick="runSweep(2800)">TEST 2.8s</button>
+        <button onclick="runSweep(3000)">TEST 3.0s</button>
+    </div>
+    <button onclick="runSweep(3500)" style="width:100%; margin-top:10px; border-color: red; color: red;">TEST 3.5s (ULTRA)</button>
 
-    <script>
-        const logBox = document.getElementById('logBox');
-        function print(msg, cls='') {
-            const d = document.createElement('div');
-            d.className = cls;
-            d.innerHTML = `[${performance.now().toFixed(0)}ms] ${msg}`;
-            logBox.appendChild(d);
-            logBox.scrollTop = logBox.scrollHeight;
-        }
+    <div class="console" id="logBox">
+        <div>> System Ready. Waiting for User Activation...</div>
+    </div>
+</div>
 
-        function runStrictTest(delay) {
-            print(`--- Memicu Alert (${delay}ms) ---`, 'info');
-            alert("Klik OK dan JANGAN SENTUH HP.");
+<script>
+    const logBox = document.getElementById('logBox');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const docEl = document.documentElement;
+
+    function print(msg, cls='') {
+        const now = new Date();
+        const timestamp = `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}.${now.getMilliseconds()}`;
+        const div = document.createElement('div');
+        div.className = cls;
+        div.innerHTML = `[${timestamp}] > ${msg}`;
+        logBox.appendChild(div);
+        logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function runSweep(targetMs) {
+        logBox.innerHTML = ''; // Clear logs
+        print(`Initiating Sweep Test for ${targetMs}ms...`, 'info');
+        
+        // Step 1: Trigger User Activation
+        alert(`UJI NYALI: ${targetMs/1000} DETIK\n\n1. Klik OK\n2. Lepas tangan dari HP\n3. Jangan sentuh layar sama sekali!`);
+        
+        const T0 = performance.now();
+        print("Alert Dismissed. Activation Window Open.", "success");
+
+        // UI Timer Loop
+        const timerInterval = setInterval(() => {
+            const elapsed = performance.now() - T0;
+            timerDisplay.innerText = (elapsed / 1000).toFixed(3) + "s";
+            if (elapsed >= targetMs + 500) clearInterval(timerInterval);
+        }, 16);
+
+        // Step 2: The Delayed Call (The Core Test)
+        setTimeout(() => {
+            const T_CALL = performance.now();
+            const diffCall = (T_CALL - T0).toFixed(2);
             
-            const T0 = performance.now();
-            print("Alert CLOSED. Tracking started...");
+            print(`<b>CALLING requestFullscreen() at ${diffCall}ms</b>`, 'info');
 
-            setTimeout(() => {
-                const T_CALL = performance.now();
-                const diffCall = (T_CALL - T0).toFixed(2);
-                
-                print(`ACTION: Calling requestFullscreen() at <b>${diffCall}ms</b>`, 'info');
+            docEl.requestFullscreen()
+                .then(() => {
+                    const T_RES = performance.now();
+                    const diffRes = (T_RES - T0).toFixed(2);
+                    print(`🔥 SUCCESS: Fullscreen ACTIVE at ${diffRes}ms`, 'success');
+                    print(`RESULT: ACTIVATION LEAK CONFIRMED at >${targetMs}ms`, 'success');
+                    
+                    // Bangunkan user jika tembus angka keramat
+                    if (diffCall > 2700) {
+                        alert(`CRITICAL: Bypass Success at ${diffCall}ms!`);
+                    }
+                })
+                .catch((err) => {
+                    const T_ERR = performance.now();
+                    const diffErr = (T_ERR - T0).toFixed(2);
+                    print(`❌ BLOCKED: Activation Expired at ${diffErr}ms`, 'fail');
+                    print("RESULT: Safe / Intended Behavior.");
+                });
 
-                document.documentElement.requestFullscreen()
-                    .then(() => {
-                        const T_RESOLVE = performance.now();
-                        const diffResolve = (T_RESOLVE - T0).toFixed(2);
-                        print(`✅ SUCCESS: Resolved at <b>${diffResolve}ms</b>`, 'success');
-                        
-                        if (diffCall > 2100) {
-                            alert(`BINGO! Call at ${diffCall}ms was accepted!`);
-                        }
-                    })
-                    .catch((err) => {
-                        const T_BLOCK = performance.now();
-                        const diffBlock = (T_BLOCK - T0).toFixed(2);
-                        print(`❌ BLOCKED: at ${diffBlock}ms`, 'fail');
-                    });
+        }, targetMs);
+    }
+</script>
 
-            }, delay);
-        }
-    </script>
 </body>
 </html>
