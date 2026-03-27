@@ -1,84 +1,60 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VRP Final Validator: Nested Delay</title>
+    <title>Clean Proof: 3.5s Activation Leak</title>
     <style>
-        body { background: #000; color: #0f0; font-family: monospace; padding: 20px; text-align: center; }
-        .console { background: #111; border: 1px solid #0f0; padding: 10px; text-align: left; height: 250px; overflow-y: auto; font-size: 12px; margin-top: 20px; }
-        button { width: 100%; padding: 20px; background: #222; color: #0f0; border: 2px solid #0f0; cursor: pointer; font-weight: bold; }
-        .timer { font-size: 30px; color: yellow; margin: 10px; }
-        .success { color: #0f0; font-weight: bold; background: #003300; }
-        .fail { color: #f00; font-weight: bold; }
+        body { font-family: sans-serif; text-align: center; padding-top: 100px; background: #111; color: #eee; }
+        #box { border: 2px solid #444; padding: 30px; display: inline-block; border-radius: 15px; }
+        #timer { font-size: 48px; font-weight: bold; margin: 20px 0; color: #007bff; }
+        #status { font-size: 18px; margin-bottom: 20px; }
+        button { padding: 15px 30px; font-size: 20px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 8px; }
+        .success { color: #28a745; font-weight: bold; }
+        .fail { color: #dc3545; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h2>🔬 NESTED DELAY TEST (3.5s)</h2>
-    <div class="timer" id="timer">0.000s</div>
-    <button onclick="runNestedTest()">START NESTED TEST (2s + 1.5s)</button>
+<div id="box">
+    <h2>Chrome Android Security Research</h2>
+    <div id="status">Klik tombol lalu lepaskan HP anda.</div>
+    <div id="timer">0ms</div>
+    <button id="runTest">MULAI UJI (3.5 DETIK)</button>
+</div>
 
-    <div class="console" id="logBox">> Waiting for command...</div>
+<script>
+    const btn = document.getElementById('runTest');
+    const timerDisplay = document.getElementById('timer');
+    const statusDisplay = document.getElementById('status');
+    let start;
 
-    <script>
-        const logBox = document.getElementById('logBox');
-        const timer = document.getElementById('timer');
-    
-        function print(msg, cls='') {
-            const d = document.createElement('div');
-            d.className = cls;
-            d.innerHTML = `[${performance.now().toFixed(0)}ms] > ${msg}`;
-            logBox.appendChild(d);
-            logBox.scrollTop = logBox.scrollHeight;
-        }
-    
-        async function runNestedTest() {
-            // Reset state
-            logBox.innerHTML = '';
-            document.body.style.background = "#000"; 
-            
-            print("Memicu Alert...");
-            alert("Click OK. Fullscreen is invoked via NESTED timeout (3.5s).");
-            
-            const T0 = performance.now();
-            
-            const intv = setInterval(() => {
-                timer.innerText = ((performance.now() - T0)/1000).toFixed(3) + "s";
-            }, 50);
-    
-            print("Step 1: Waiting for the first 2000ms...");
-            
-            // DELAY1  (2d)
+    btn.onclick = () => {
+        start = performance.now();
+        btn.style.display = 'none'; 
+        statusDisplay.innerText = "SISTEM SEDANG BERJALAN... JANGAN SENTUH LAYAR!";
+        const interval = setInterval(() => {
+            const now = Math.round(performance.now() - start);
+            timerDisplay.innerText = `${now}ms`;
+        }, 10);
+        setTimeout(() => {
+            console.log("2000ms passed...");
             setTimeout(() => {
-                print("Step 1 DONE. Scheduling NOW Full Screen (Nested)...");
-    
-                // DELAY2 (1.5d) 
-                setTimeout(async () => {
-                    const T_CALL = performance.now();
-                    const diff = (T_CALL - T0).toFixed(2);
-                    print(`<b>REAL CALL at ${diff}ms</b>`, 'info');
-    
-                    try {
-                        // Execute Fullscreen
-                        await document.documentElement.requestFullscreen();
-                        
-                        // True Fullscreen
-                        document.body.style.background = "red"; 
-                        print(`🔥 SUCCESS! FULLSCREEN ACTIVE at ${diff}ms`, 'success');
-                        print("CHECK: Is the screen still Red & Fullscreen? (Without mental exit)");
-                        
-                        clearInterval(intv);
-                    } catch (err) {
-                        // False Fullscreen
-                        print(`❌ BLOCKED at ${diff}ms`, 'fail');
-                        print(`Reason: ${err.message}`, 'fail');
-                        clearInterval(intv);
-                    }
-                }, 1500);
-    
-            }, 2000);
-        }
-    </script>
+                const totalTime = Math.round(performance.now() - start);
+                
+                document.documentElement.requestFullscreen()
+                .then(() => {
+                    clearInterval(interval);
+                    timerDisplay.innerText = `${totalTime}ms`;
+                    statusDisplay.innerHTML = `<span class="success">VULNERABLE! Fullscreen berhasil dipicu pada ${totalTime}ms.</span>`;
+                })
+                .catch((e) => {
+                    clearInterval(interval);
+                    statusDisplay.innerHTML = `<span class="fail">GAGAL: ${e.message}</span>`;
+                });
+
+            }, 1500); 
+
+        }, 2000);
+    };
+</script>
 </body>
 </html>
