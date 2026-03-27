@@ -24,7 +24,7 @@
     <script>
         const logBox = document.getElementById('logBox');
         const timer = document.getElementById('timer');
-
+    
         function print(msg, cls='') {
             const d = document.createElement('div');
             d.className = cls;
@@ -32,43 +32,52 @@
             logBox.appendChild(d);
             logBox.scrollTop = logBox.scrollHeight;
         }
-
+    
         async function runNestedTest() {
+            // Reset state
             logBox.innerHTML = '';
+            document.body.style.background = "#000"; 
+            
             print("Memicu Alert...");
-            alert("Klik OK. Fullscreen akan dipanggil lewat NESTED timeout (Total 3.5s).");
+            alert("Klik OK. Fullscreen dipanggil via NESTED timeout (3.5s).");
             
             const T0 = performance.now();
             
-            // Timer visual
+            // Timer visual agar kita tahu detik keberapa
             const intv = setInterval(() => {
                 timer.innerText = ((performance.now() - T0)/1000).toFixed(3) + "s";
             }, 50);
-
+    
             print("Step 1: Menunggu 2000ms pertama...");
             
             // DELAY PERTAMA (2 Detik)
             setTimeout(() => {
                 print("Step 1 SELESAI. Menjadwalkan Fullscreen SEKARANG (Nested)...");
-
-                // DELAY KEDUA (1.5 Detik) - Task ini baru dibuat di sini!
+    
+                // DELAY KEDUA (1.5 Detik) - Task ini benar-benar baru dibuat di sini!
                 setTimeout(async () => {
                     const T_CALL = performance.now();
                     const diff = (T_CALL - T0).toFixed(2);
                     print(`<b>REAL CALL at ${diff}ms</b>`, 'info');
-
+    
                     try {
+                        // Eksekusi Fullscreen
                         await document.documentElement.requestFullscreen();
-                        print(`🔥 SUCCESS! Activation LEAK confirmed at ${diff}ms`, 'success');
+                        
+                        // JIKA BERHASIL: Ganti warna & stop timer
+                        document.body.style.background = "red"; 
+                        print(`🔥 SUCCESS! FULLSCREEN ACTIVE at ${diff}ms`, 'success');
+                        print("CEK: Apakah layar tetap Merah & Fullscreen? (Tanpa mental keluar)");
+                        
                         clearInterval(intv);
-                        alert("BOOM! Nested Test SUCCESS!");
                     } catch (err) {
+                        // JIKA GAGAL (Sesuai spec keamanan browser)
                         print(`❌ BLOCKED at ${diff}ms`, 'fail');
                         print(`Reason: ${err.message}`, 'fail');
                         clearInterval(intv);
                     }
                 }, 1500);
-
+    
             }, 2000);
         }
     </script>
