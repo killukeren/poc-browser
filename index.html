@@ -3,79 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VRP Lab: 2.5s Activation Leak</title>
+    <title>Precision VRP Validator</title>
     <style>
-        body { background: #0a0a0a; color: #00ff00; font-family: 'Courier New', monospace; padding: 20px; text-align: center; }
-        .console { background: #000; border: 1px solid #00ff00; padding: 15px; text-align: left; margin-top: 20px; height: 200px; overflow-y: auto; font-size: 12px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,255,0,0.2); }
-        button { padding: 18px; background: #222; color: #00ff00; border: 2px solid #00ff00; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 1.1rem; transition: 0.2s; }
-        button:active { background: #00ff00; color: #000; }
-        .timer { font-size: 40px; margin: 20px 0; color: #ffff00; text-shadow: 0 0 10px rgba(255,255,0,0.5); }
-        .success { color: #00ff00; font-weight: bold; }
-        .fail { color: #ff0000; font-weight: bold; }
-        .highlight { color: #00ffff; }
+        body { background: #000; color: #0f0; font-family: monospace; padding: 20px; }
+        .log { background: #111; border: 1px solid #333; padding: 10px; height: 300px; overflow-y: auto; font-size: 12px; margin-top: 10px; }
+        button { width: 100%; padding: 15px; background: #222; color: #0f0; border: 1px solid #0f0; cursor: pointer; margin-bottom: 5px; }
+        .success { color: #0f0; font-weight: bold; }
+        .fail { color: #f00; }
+        .info { color: #55f; }
     </style>
 </head>
 <body>
 
-    <h2>🔬 VRP RESEARCH: TEST 2.5s</h2>
-    <div class="timer" id="display">0.000s</div>
-
-    <button onclick="startResearch(2500)">START 2.5s LEAK TEST</button>
+    <h3>🔬 Activation Validator</h3>
     
-    <div class="console" id="log">
-        <div>[SYSTEM] Menunggu User Activation...</div>
-    </div>
+    <button onclick="runStrictTest(2100)">TEST 2.1s</button>
+    <button onclick="runStrictTest(2500)">TEST 2.5s</button>
+    <button onclick="runStrictTest(3000)">TEST 3.0s</button>
+
+    <div class="log" id="logBox"></div>
 
     <script>
-        const logger = document.getElementById('log');
-        const display = document.getElementById('display');
-        const el = document.documentElement;
-
-        function print(msg, type = '') {
-            const div = document.createElement('div');
-            div.className = type;
-            div.innerHTML = `[${new Date().toLocaleTimeString('id-ID', {hour12:false})}.${new Date().getMilliseconds()}] > ${msg}`;
-            logger.appendChild(div);
-            logger.scrollTop = logger.scrollHeight;
+        const logBox = document.getElementById('logBox');
+        function print(msg, cls='') {
+            const d = document.createElement('div');
+            d.className = cls;
+            d.innerHTML = `[${performance.now().toFixed(0)}ms] ${msg}`;
+            logBox.appendChild(d);
+            logBox.scrollTop = logBox.scrollHeight;
         }
 
-        function startResearch(ms) {
-            print("Memicu Modal Alert...");
-            
-            // Step 1: User Gesture (Klik OK)
-            alert(`UJI NYALI 2.5 DETIK:\n\n1. Klik OK\n2. JANGAN SENTUH HP/LAYAR\n3. Tunggu sampai timer 2.500s`);
+        function runStrictTest(delay) {
+            print(`--- Memicu Alert (${delay}ms) ---`, 'info');
+            alert("Klik OK dan JANGAN SENTUH HP.");
             
             const T0 = performance.now();
-            print("Alert ditutup. Token Activation dimulai.", "success");
+            print("Alert CLOSED. Tracking started...");
 
-            // Visual Countdown High Precision
-            const interval = setInterval(() => {
-                const elapsed = performance.now() - T0;
-                display.innerText = (elapsed / 1000).toFixed(3) + "s";
-                if (elapsed >= ms) clearInterval(interval);
-            }, 10);
-
-            // Step 2: Async Call (Mencoba Bypass)
             setTimeout(() => {
-                const T1 = performance.now();
-                const diff = (T1 - T0).toFixed(2);
+                const T_CALL = performance.now();
+                const diffCall = (T_CALL - T0).toFixed(2);
                 
-                print(`Mengeksekusi requestFullscreen() pada ${diff}ms...`, "highlight");
+                print(`ACTION: Calling requestFullscreen() at <b>${diffCall}ms</b>`, 'info');
 
-                el.requestFullscreen()
+                document.documentElement.requestFullscreen()
                     .then(() => {
-                        const final = (performance.now() - T0).toFixed(2);
-                        print(`🔥 SUCCESS! Fullscreen tembus pada ${final}ms!`, "success");
-                        print("⚠️ KESIMPULAN: USER ACTIVATION LEAK DETECTED.", "success");
-                        alert(`BOOM! Tembus di ${final}ms.\nIni adalah valid finding (Activation Leak).`);
+                        const T_RESOLVE = performance.now();
+                        const diffResolve = (T_RESOLVE - T0).toFixed(2);
+                        print(`✅ SUCCESS: Resolved at <b>${diffResolve}ms</b>`, 'success');
+                        
+                        if (diffCall > 2100) {
+                            alert(`BINGO! Call at ${diffCall}ms was accepted!`);
+                        }
                     })
                     .catch((err) => {
-                        const final = (performance.now() - T0).toFixed(2);
-                        print(`❌ FAILED: Blocked at ${final}ms.`, "fail");
-                        print("Kesimpulan: Activation Scope sudah benar (Expired).", "fail");
+                        const T_BLOCK = performance.now();
+                        const diffBlock = (T_BLOCK - T0).toFixed(2);
+                        print(`❌ BLOCKED: at ${diffBlock}ms`, 'fail');
                     });
 
-            }, ms);
+            }, delay);
         }
     </script>
 </body>
