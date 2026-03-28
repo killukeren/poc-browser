@@ -42,7 +42,7 @@
             timerBox.innerText = `${min}:${sec}:${ms}`;
         }
 
-        const stages = [1000, 1000, 1000, 900]; 
+        const stages = [1000, 1000, 1000, 1000, 900]; 
 
         function executeStage(index) {
             if (index >= stages.length) {
@@ -52,13 +52,6 @@
                     .then(() => {
                         log("<span style='color:cyan; font-size: 1.2em;'>SUCCESS: GESTURE LAUNDERED!</span>");
                         clearInterval(timerInterval);
-                        
-                        setTimeout(() => {
-                            if (document.fullscreenElement) {
-                                document.exitFullscreen();
-                                log("Test completed. Exit Fullscreen.");
-                            }
-                        });
                     })
                     .catch(e => {
                         log("<span style='color:red'>EXPIRED: " + e.message + "</span>");
