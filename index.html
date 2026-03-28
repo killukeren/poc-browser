@@ -39,7 +39,7 @@
             timerBox.innerText = `${min}:${sec}:${ms}`;
         }
 
-        const stages = [4900]; // Target 4.9s
+        const stages = [4900]; 
 
         function executeStage(index) {
             if (index >= stages.length) {
@@ -68,7 +68,6 @@
         }
 
         btn.onclick = () => {
-            alert("Test Initialized. Please do not touch the screen after clicking OK.");
             startTime = T0();
             btn.style.display = 'none';
             log("User activation captured. Starting async chain.");
